@@ -337,7 +337,7 @@ async function loadSkills() {
   const prev1 = sk1.value;
   const prev2 = sk2.value;
 
-  sk1.innerHTML = data.skill1.map((s, i) => `<option value="${s}" data-max="${data.skill1_max[i]}">${s}</option>`).join('');
+  sk1.innerHTML = '<option value="__any__" data-max="20">★ なんでも（スキル1あり）</option>' + data.skill1.map((s, i) => `<option value="${s}" data-max="${data.skill1_max[i]}">${s}</option>`).join('');
   sk2.innerHTML = '<option value="" data-max="20">— なし —</option><option value="__any__" data-max="20">★ なんでも（スキル2あり）</option>' + data.skill2.map((s, i) => `<option value="${s}" data-max="${data.skill2_max[i]}">${s}</option>`).join('');
   orig.innerHTML = data.origin.map(s => `<option value="${s}">${s}</option>`).join('');
 
