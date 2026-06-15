@@ -374,10 +374,12 @@
       <div class="beat-dot" id="bd2"></div>
       <div class="beat-dot" id="bd3"></div>
     </div>
+    <div id="metro-beat-count" style="font-family:monospace;font-size:1.4rem;font-weight:700;color:var(--yellow)">0 拍</div>
     <div class="metro-row">
       <label>速度</label>
-      <input type="range" id="metro-bpm" min="10" max="60" value="30" step="1" oninput="metroUpdateBpm()">
-      <span id="metro-bpm-label">30 fps</span>
+      <input type="range" id="metro-bpm-slider" min="1" max="120" value="30" step="1" oninput="metroSyncFromSlider()" style="flex:1">
+      <input type="number" id="metro-bpm" min="1" max="9999" value="30" step="1" oninput="metroSyncFromNumber()" style="width:72px;flex:none">
+      <span style="font-size:0.82rem;color:var(--text2);white-space:nowrap">fps</span>
     </div>
     <button class="metro-start-btn" id="metro-btn" onclick="metroToggle()">▶ メトロノーム開始</button>
   </div>
@@ -656,7 +658,8 @@ let metroCtx = null;
 let metroNextTime = 0;
 let metroSchedulerId = null;
 let metroBpm = 30;
-let metroBeat = 0;
+let metroBeat = 0;       // position within 4-beat bar (for dot display)
+let metroTotalBeats = 0; // total beats since start
 const SCHEDULE_AHEAD = 0.1;
 const SCHEDULE_INTERVAL = 25;
 
@@ -680,21 +683,28 @@ function metroSchedule() {
   while (metroNextTime < ctx.currentTime + SCHEDULE_AHEAD) {
     const beatInBar = metroBeat % 4;
     const accent = beatInBar === 0;
+    const capturedTotal = metroTotalBeats;
+    const capturedBeat  = beatInBar;
     metroClick(metroNextTime, accent);
     const delay = (metroNextTime - ctx.currentTime) * 1000;
-    const capturedBeat = beatInBar;
     setTimeout(() => {
+      // update dot
       for (let i = 0; i < 4; i++) {
-        const dot = document.getElementById('bd' + i);
-        if (!dot) return;
-        dot.classList.remove('on', 'on-accent');
+        const d = document.getElementById('bd' + i);
+        if (d) d.classList.remove('on', 'on-accent');
       }
       const dot = document.getElementById('bd' + capturedBeat);
-      if (dot) dot.classList.add(accent ? 'on-accent' : 'on');
-      setTimeout(() => { if (dot) dot.classList.remove('on', 'on-accent'); }, 80);
+      if (dot) {
+        dot.classList.add(accent ? 'on-accent' : 'on');
+        setTimeout(() => dot.classList.remove('on', 'on-accent'), 80);
+      }
+      // update total beat counter
+      const el = document.getElementById('metro-beat-count');
+      if (el) el.textContent = (capturedTotal + 1) + ' 拍';
     }, Math.max(0, delay));
     metroNextTime += interval;
     metroBeat++;
+    metroTotalBeats++;
   }
 }
 function metroToggle() {
@@ -703,6 +713,8 @@ function metroToggle() {
   if (ctx.state === 'suspended') ctx.resume();
   metroNextTime = ctx.currentTime + 0.05;
   metroBeat = 0;
+  metroTotalBeats = 0;
+  document.getElementById('metro-beat-count').textContent = '0 拍';
   metroRunning = true;
   document.getElementById('metro-btn').textContent = '⏸ メトロノーム停止';
   document.getElementById('metro-btn').classList.add('running');
@@ -715,9 +727,10 @@ function metroStop() {
   const btn = document.getElementById('metro-btn');
   if (btn) { btn.textContent = '▶ メトロノーム開始'; btn.classList.remove('running'); }
 }
-function metroUpdateBpm() {
-  metroBpm = parseInt(document.getElementById('metro-bpm').value);
-  document.getElementById('metro-bpm-label').textContent = metroBpm + ' fps';
+function metroApplyBpm(bpm) {
+  metroBpm = Math.max(1, Math.min(9999, bpm || 30));
+  document.getElementById('metro-bpm').value = metroBpm;
+  document.getElementById('metro-bpm-slider').value = Math.min(metroBpm, 120);
   if (metroRunning) {
     clearInterval(metroSchedulerId);
     const ctx = metroGetCtx();
@@ -725,6 +738,12 @@ function metroUpdateBpm() {
     metroSchedule();
     metroSchedulerId = setInterval(metroSchedule, SCHEDULE_INTERVAL);
   }
+}
+function metroSyncFromSlider() {
+  metroApplyBpm(parseInt(document.getElementById('metro-bpm-slider').value));
+}
+function metroSyncFromNumber() {
+  metroApplyBpm(parseInt(document.getElementById('metro-bpm').value));
 }
 
 loadSkills();
