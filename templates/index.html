@@ -263,20 +263,22 @@
 
     <div class="section-title">スキル1</div>
     <div class="row">
-      <select id="skill1"></select>
+      <select id="skill1" onchange="updateSpMax('sp1', this)"></select>
     </div>
     <div class="row">
       <label>ポイント</label>
-      <input type="number" id="sp1" value="7" min="0" max="20" style="width:80px">
+      <input type="number" id="sp1" value="7" min="1" max="20" style="width:80px">
+      <span id="sp1-max" style="color:var(--text2);font-size:0.78rem">/ 20</span>
     </div>
 
     <div class="section-title">スキル2 (任意)</div>
     <div class="row">
-      <select id="skill2"><option value="">— なし —</option></select>
+      <select id="skill2" onchange="updateSpMax('sp2', this)"><option value="">— なし —</option></select>
     </div>
     <div class="row">
       <label>ポイント</label>
-      <input type="number" id="sp2" value="5" min="0" max="20" style="width:80px">
+      <input type="number" id="sp2" value="5" min="1" max="20" style="width:80px">
+      <span id="sp2-max" style="color:var(--text2);font-size:0.78rem">/ 20</span>
     </div>
 
     <div class="section-title">スロット (最低)</div>
@@ -335,12 +337,25 @@ async function loadSkills() {
   const prev1 = sk1.value;
   const prev2 = sk2.value;
 
-  sk1.innerHTML = data.skill1.map(s => `<option value="${s}">${s}</option>`).join('');
-  sk2.innerHTML = '<option value="">— なし —</option>' + data.skill2.map(s => `<option value="${s}">${s}</option>`).join('');
+  sk1.innerHTML = data.skill1.map((s, i) => `<option value="${s}" data-max="${data.skill1_max[i]}">${s}</option>`).join('');
+  sk2.innerHTML = '<option value="" data-max="20">— なし —</option>' + data.skill2.map((s, i) => `<option value="${s}" data-max="${data.skill2_max[i]}">${s}</option>`).join('');
   orig.innerHTML = data.origin.map(s => `<option value="${s}">${s}</option>`).join('');
 
   if (prev1 && [...sk1.options].some(o => o.value === prev1)) sk1.value = prev1;
   if (prev2 && [...sk2.options].some(o => o.value === prev2)) sk2.value = prev2;
+
+  updateSpMax('sp1', sk1);
+  updateSpMax('sp2', sk2);
+}
+
+function updateSpMax(inputId, selectEl) {
+  const selected = selectEl.options[selectEl.selectedIndex];
+  const max = selected ? parseInt(selected.dataset.max || 20) : 20;
+  const input = document.getElementById(inputId);
+  const label = document.getElementById(inputId + '-max');
+  input.max = max;
+  if (parseInt(input.value) > max) input.value = max;
+  if (label) label.textContent = '/ ' + max;
 }
 
 function setLang(lang) {

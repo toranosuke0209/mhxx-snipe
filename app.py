@@ -31,9 +31,15 @@ def get_skills():
     lang = request.args.get('lang', 'ja')
     color = request.args.get('color', 'blue')
     apply_config(lang, color)
+    skill1_names = core.get_skill_list(1)
+    skill2_names = core.get_skill_list(2)
+    skill1_max = [sp[1] for sp in core.sp1]
+    skill2_max = [sp[1] for sp in core.sp2]
     return jsonify({
-        'skill1': core.get_skill_list(1),
-        'skill2': core.get_skill_list(2),
+        'skill1': skill1_names,
+        'skill1_max': skill1_max,
+        'skill2': skill2_names,
+        'skill2_max': skill2_max,
         'origin': core.get_origin_list(),
         'kinds': core.get_kinds_list(),
     })
