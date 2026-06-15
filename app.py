@@ -1,0 +1,118 @@
+from flask import Flask, render_template, request, jsonify
+import core
+
+app = Flask(__name__)
+
+COLOR_SETTERS = {
+    'blue': core.set_blue,
+    'red': core.set_red,
+    'yellow': core.set_yellow,
+    'white': core.set_white,
+}
+
+LANG_SETTERS = {
+    'ja': core.set_ja,
+    'en': core.set_en,
+}
+
+
+def apply_config(lang, color):
+    LANG_SETTERS.get(lang, core.set_ja)()
+    COLOR_SETTERS.get(color, core.set_blue)()
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+
+@app.route('/api/skills')
+def get_skills():
+    lang = request.args.get('lang', 'ja')
+    color = request.args.get('color', 'blue')
+    apply_config(lang, color)
+    return jsonify({
+        'skill1': core.get_skill_list(1),
+        'skill2': core.get_skill_list(2),
+        'origin': core.get_origin_list(),
+        'kinds': core.get_kinds_list(),
+    })
+
+
+@app.route('/api/search', methods=['POST'])
+def do_search():
+    data = request.json
+    lang = data.get('lang', 'ja')
+    color = data.get('color', 'blue')
+    mode = data.get('mode', 'exact')
+
+    seed_raw = data.get('seed', '')
+    if seed_raw:
+        try:
+            parts = [int(x.strip(), 16) for x in seed_raw.split(',')]
+            if len(parts) == 4:
+                core.set_seed(parts)
+            else:
+                return jsonify({'error': 'Seed must be 4 hex values separated by commas'}), 400
+        except ValueError:
+            return jsonify({'error': 'Invalid seed format'}), 400
+    else:
+        core.set_seed(core.DEFAULT_SEED)
+
+    apply_config(lang, color)
+
+    start = int(data.get('start', 0))
+    step = min(int(data.get('step', 100000)), 10000000)
+    origin_name = data.get('origin', core.origin[0])
+    skill1_name = data.get('skill1', '')
+    sp1 = int(data.get('sp1', 0))
+    skill2_name = data.get('skill2', '')
+    sp2 = int(data.get('sp2', 0))
+    slots = int(data.get('slots', 0))
+
+    try:
+        _origin = core.origin.index(origin_name)
+    except ValueError:
+        _origin = 0
+
+    def find_skill1_id(name):
+        if not name:
+            return -1
+        try:
+            skill_idx = core.skill.index(name) if name in core.skill else next(
+                (i for i, s in enumerate(core.skill) if s.strip() == name), -1)
+            return core.skill1.index(skill_idx)
+        except (ValueError, StopIteration):
+            return -1
+
+    def find_skill2_id(name):
+        if not name:
+            return -1
+        try:
+            skill_idx = core.skill.index(name) if name in core.skill else next(
+                (i for i, s in enumerate(core.skill) if s.strip() == name), -1)
+            return core.skill2.index(skill_idx)
+        except (ValueError, StopIteration):
+            return -1
+
+    _id1 = find_skill1_id(skill1_name)
+    _id2 = find_skill2_id(skill2_name)
+
+    if _id1 == -1 and _id2 == -1:
+        _id1 = 0
+
+    p = [_id1, sp1, _id2, sp2, slots, _origin, len(core.skill1), len(core.skill2)]
+
+    try:
+        if mode == 'exact':
+            results = core.search(start, step, p)
+        else:
+            results = core.search_greater(start, step, p)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    return jsonify({'results': results, 'count': len(results)})
+
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
