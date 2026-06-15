@@ -399,7 +399,8 @@
         <span class="count-badge" id="combo-count-badge" style="display:none"></span>
       </div>
       <div class="combo-hint" style="margin-bottom:12px">
-        フレームをクリックするとタイマー画面に移動します。
+        フレームをクリック → タイマー画面へ。<br>
+        返ってくるフレームは<b>調合開始時</b>のフレームです。スナイプ画面の「③ 現在F」にセットしてください。
       </div>
       <div id="combo-results-area">
         <div class="empty-state">
@@ -438,14 +439,17 @@
   </div>
 
   <!-- Timer buttons -->
+  <div style="font-size:0.72rem;color:var(--text2);margin-bottom:6px;text-align:center">
+    ① 調合開始と同時に ▶ スタート　② 調合完了 → ホームボタンで停止　③ 調合検索でフレーム特定 → セット　④ ゲームと同時に ▶ スタート
+  </div>
   <div class="timer-controls">
     <button class="ctrl-btn start" id="sn-timer-btn" onclick="snTimerToggle()">▶ スタート</button>
     <button class="ctrl-btn" onclick="snTimerReset()">↺ リセット</button>
   </div>
 
   <!-- Current frame override -->
-  <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-    <span style="font-size:0.78rem;color:var(--text2)">現在F</span>
+  <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+    <span style="font-size:0.78rem;color:var(--text2);white-space:nowrap">③ 現在F</span>
     <input type="number" id="sn-current-input" min="0" value="0"
       style="width:110px;padding:5px 8px;font-size:0.85rem;font-family:monospace"
       placeholder="0">
@@ -454,7 +458,7 @@
              border-radius:6px;padding:5px 14px;font-size:0.82rem;cursor:pointer;white-space:nowrap">
       セット
     </button>
-    <span style="font-size:0.72rem;color:var(--text2)">← 調合検索で特定したフレームを入力</span>
+    <span style="font-size:0.72rem;color:var(--text2)">← 調合検索で特定した調合開始フレームを入力</span>
   </div>
 
   <!-- Metronome -->
