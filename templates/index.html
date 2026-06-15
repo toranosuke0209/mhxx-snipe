@@ -443,6 +443,20 @@
     <button class="ctrl-btn" onclick="snTimerReset()">↺ リセット</button>
   </div>
 
+  <!-- Current frame override -->
+  <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+    <span style="font-size:0.78rem;color:var(--text2)">現在F</span>
+    <input type="number" id="sn-current-input" min="0" value="0"
+      style="width:110px;padding:5px 8px;font-size:0.85rem;font-family:monospace"
+      placeholder="0">
+    <button onclick="snSetCurrentFrame()"
+      style="background:var(--surface2);border:1px solid var(--border);color:var(--text);
+             border-radius:6px;padding:5px 14px;font-size:0.82rem;cursor:pointer;white-space:nowrap">
+      セット
+    </button>
+    <span style="font-size:0.72rem;color:var(--text2)">← 調合検索で特定したフレームを入力</span>
+  </div>
+
   <!-- Metronome -->
   <div class="metro-panel">
     <div class="metro-title">メトロノーム</div>
@@ -724,10 +738,25 @@ function snTimerStop() {
 function snTimerReset() {
   snTimerStop();
   snFrame = 0;
+  document.getElementById('sn-current-input').value = 0;
   document.getElementById('sn-current').textContent      = '0';
   document.getElementById('sn-current-time').textContent = '0d 0h 0m 0s 0f';
   document.getElementById('sn-remain').textContent       = `目標まで ${snTarget.toLocaleString()} F`;
   document.getElementById('sn-remain').className = 'counter-remain';
+}
+
+function snSetCurrentFrame() {
+  const val = parseInt(document.getElementById('sn-current-input').value) || 0;
+  snTimerStop();
+  snFrame = val;
+  document.getElementById('sn-current').textContent      = snFrame.toLocaleString();
+  document.getElementById('sn-current-time').textContent = frameToTime(snFrame);
+  const remain = snTarget - snFrame;
+  const rem = document.getElementById('sn-remain');
+  rem.textContent = remain > 0 ? `目標まで ${remain.toLocaleString()} F`
+                  : remain === 0 ? '✔ 目標フレーム！'
+                  : `目標を ${Math.abs(remain)} F 超過`;
+  rem.className = 'counter-remain' + (remain <= 0 ? ' ok' : remain <= 300 ? ' close' : '');
 }
 
 // ─── Metronome ────────────────────────────────────────────
