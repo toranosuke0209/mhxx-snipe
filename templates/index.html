@@ -159,6 +159,25 @@
     .mode-tab:last-child  { border-radius: 0 6px 6px 0; }
     .mode-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
 
+    /* ── Combo snipe ── */
+    .combo-textarea {
+      width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+      border-radius: 6px; padding: 10px; font-size: 0.9rem; font-family: monospace;
+      resize: vertical; min-height: 80px; outline: none; transition: border-color 0.2s;
+    }
+    .combo-textarea:focus { border-color: var(--accent); }
+    .combo-hint { font-size: 0.72rem; color: var(--text2); margin-top: 4px; line-height: 1.6; }
+    .combo-results { margin-top: 16px; }
+    .combo-result-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background 0.12s; border-radius: 6px;
+    }
+    .combo-result-row:hover { background: rgba(233,69,96,0.1); }
+    .combo-frame { font-family: monospace; font-size: 1rem; color: var(--blue); font-weight: 700; }
+    .combo-time  { font-size: 0.82rem; color: var(--text2); font-family: monospace; }
+    .combo-snipe-hint { font-size: 0.72rem; color: var(--accent); }
+
     /* ════════════════════════════
        SNIPE SCREEN
     ════════════════════════════ */
@@ -253,6 +272,14 @@
 <div class="layout">
   <aside class="sidebar">
 
+    <!-- Top-level mode tabs -->
+    <div class="mode-tabs" style="margin-bottom:20px">
+      <div class="mode-tab active" id="tab-charm"  onclick="setSearchTab('charm')">お守り検索</div>
+      <div class="mode-tab"        id="tab-combo"  onclick="setSearchTab('combo')">調合スナイプ</div>
+    </div>
+
+    <!-- ── CHARM SEARCH PANEL ── -->
+    <div id="panel-charm">
     <div class="section-title">言語 / Language</div>
     <div class="btn-group">
       <button class="btn active" id="lang-ja" onclick="setLang('ja')">日本語</button>
@@ -316,18 +343,69 @@
 
     <button class="search-btn" id="search-btn" onclick="doSearch()">🔍 検索</button>
     <div class="spinner" id="spinner"></div>
+    </div><!-- /panel-charm -->
+
+    <!-- ── COMBO SNIPE PANEL ── -->
+    <div id="panel-combo" style="display:none">
+    <div class="section-title">シード値 (任意)</div>
+    <input type="text" id="combo-seed" placeholder="0194FD72, 79E6C985, 08DD9701, 41CFCE91">
+    <div class="seed-hint">空欄でデフォルトシードを使用</div>
+
+    <div class="section-title">調合数データ</div>
+    <textarea class="combo-textarea" id="combo-str" placeholder="例: 00 03 06 09 11 13 16 18 21 23 25 27 30 32 35 38"></textarea>
+    <div class="combo-hint">
+      自宅で調合ボタン長押し→複数個の弾を調合し、<br>
+      所持数の変化を空白区切りで入力してください。<br>
+      例) 0個→3個→6個→9個… なら <code>00 03 06 09…</code>
+    </div>
+
+    <div class="section-title">検索範囲</div>
+    <div class="row">
+      <label>開始F</label>
+      <input type="number" id="combo-start" value="0" min="0">
+    </div>
+    <div class="row">
+      <label>検索数</label>
+      <input type="number" id="combo-step" value="1000000" min="1000" max="10000000">
+    </div>
+
+    <button class="search-btn" id="combo-search-btn" onclick="doComboSearch()">🔍 検索</button>
+    <div class="spinner" id="combo-spinner"></div>
+    </div><!-- /panel-combo -->
+
   </aside>
 
   <main class="main">
     <div id="error-area"></div>
-    <div class="results-header">
-      <h2>検索結果</h2>
-      <span class="count-badge" id="count-badge" style="display:none"></span>
+
+    <!-- Charm results -->
+    <div id="charm-results-panel">
+      <div class="results-header">
+        <h2>検索結果</h2>
+        <span class="count-badge" id="count-badge" style="display:none"></span>
+      </div>
+      <div id="results-area">
+        <div class="empty-state">
+          <div class="icon">🔮</div>
+          <div>条件を設定して検索してください</div>
+        </div>
+      </div>
     </div>
-    <div id="results-area">
-      <div class="empty-state">
-        <div class="icon">🔮</div>
-        <div>条件を設定して検索してください</div>
+
+    <!-- Combo results -->
+    <div id="combo-results-panel" style="display:none">
+      <div class="results-header">
+        <h2>調合スナイプ 検索結果</h2>
+        <span class="count-badge" id="combo-count-badge" style="display:none"></span>
+      </div>
+      <div class="combo-hint" style="margin-bottom:12px">
+        フレームをクリックするとタイマー画面に移動します。
+      </div>
+      <div id="combo-results-area">
+        <div class="empty-state">
+          <div class="icon">🎯</div>
+          <div>調合データを入力して検索してください</div>
+        </div>
       </div>
     </div>
   </main>
@@ -747,6 +825,91 @@ function metroSyncFromNumber() {
 }
 
 loadSkills();
+
+// ─── Search tab switch ────────────────────────────────────
+function setSearchTab(tab) {
+  document.getElementById('panel-charm').style.display  = tab === 'charm' ? '' : 'none';
+  document.getElementById('panel-combo').style.display  = tab === 'combo' ? '' : 'none';
+  document.getElementById('charm-results-panel').style.display = tab === 'charm' ? '' : 'none';
+  document.getElementById('combo-results-panel').style.display = tab === 'combo' ? '' : 'none';
+  document.getElementById('tab-charm').classList.toggle('active', tab === 'charm');
+  document.getElementById('tab-combo').classList.toggle('active', tab === 'combo');
+}
+
+// ─── Combo search ─────────────────────────────────────────
+async function doComboSearch() {
+  const btn     = document.getElementById('combo-search-btn');
+  const spinner = document.getElementById('combo-spinner');
+  const errorArea = document.getElementById('error-area');
+  errorArea.innerHTML = '';
+  btn.disabled = true;
+  spinner.classList.add('show');
+
+  const payload = {
+    seed:  document.getElementById('combo-seed').value.trim(),
+    combo: document.getElementById('combo-str').value.trim(),
+    start: parseInt(document.getElementById('combo-start').value) || 0,
+    step:  parseInt(document.getElementById('combo-step').value) || 1000000,
+  };
+
+  try {
+    const res = await fetch('/api/search_combo', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.error) {
+      errorArea.innerHTML = `<div class="error-msg">⚠️ ${data.error}</div>`;
+    } else {
+      renderComboResults(data);
+    }
+  } catch (e) {
+    errorArea.innerHTML = `<div class="error-msg">⚠️ 通信エラー: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    spinner.classList.remove('show');
+  }
+}
+
+function renderComboResults(data) {
+  const area  = document.getElementById('combo-results-area');
+  const badge = document.getElementById('combo-count-badge');
+  if (!data.results || data.results.length === 0) {
+    area.innerHTML = '<div class="empty-state"><div class="icon">😔</div><div>一致するパターンが見つかりませんでした</div></div>';
+    badge.style.display = 'none';
+    return;
+  }
+  badge.textContent = data.results.length + '件';
+  badge.style.display = '';
+
+  area.innerHTML = data.results.map((r, i) => `
+    <div class="combo-result-row" onclick="showComboSnipe(${i})" title="クリックでタイマーへ">
+      <div>
+        <div class="combo-frame">${r.frame.toLocaleString()} F</div>
+        <div class="combo-time">${r.time}</div>
+      </div>
+      <div class="combo-snipe-hint">▶ タイマーへ</div>
+    </div>
+  `).join('');
+
+  comboResults = data.results;
+}
+
+let comboResults = [];
+function showComboSnipe(idx) {
+  const r = comboResults[idx];
+  if (!r) return;
+  document.getElementById('sn-frame').textContent = r.frame.toLocaleString();
+  document.getElementById('sn-time').textContent  = r.time;
+  document.getElementById('sn-charm').textContent = '調合スナイプ';
+  document.getElementById('sn-rare').innerHTML = '';
+  snTarget = r.frame;
+  snTimerReset();
+  document.getElementById('screen-search').classList.remove('active');
+  document.getElementById('screen-snipe').classList.add('active');
+  document.getElementById('back-btn').style.display = '';
+}
 </script>
 </body>
 </html>

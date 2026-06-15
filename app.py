@@ -124,5 +124,35 @@ def do_search():
     return jsonify({'results': results, 'count': len(results)})
 
 
+@app.route('/api/search_combo', methods=['POST'])
+def do_search_combo():
+    data = request.json
+    seed_raw = data.get('seed', '')
+    if seed_raw:
+        try:
+            parts = [int(x.strip(), 16) for x in seed_raw.split(',')]
+            if len(parts) == 4:
+                core.set_seed(parts)
+            else:
+                return jsonify({'error': 'Seed must be 4 hex values separated by commas'}), 400
+        except ValueError:
+            return jsonify({'error': 'Invalid seed format'}), 400
+    else:
+        core.set_seed(core.DEFAULT_SEED)
+
+    combo_str = data.get('combo', '').strip()
+    start = int(data.get('start', 0))
+    step = min(int(data.get('step', 1000000)), 10000000)
+
+    try:
+        result = core.search_combo(start, step, combo_str)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    if 'error' in result:
+        return jsonify(result), 400
+    return jsonify(result)
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

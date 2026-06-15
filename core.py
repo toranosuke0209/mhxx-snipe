@@ -316,6 +316,80 @@ def search_greater(start, step, p, limit=200):
     return results
 
 
+def _kmp_prefix(A):
+    n = len(A)
+    pi = [0] * n
+    j = 0
+    for i in range(1, n):
+        while j > 0 and A[i] != A[j]:
+            j = pi[j - 1]
+        if A[i] == A[j]:
+            j += 1
+        pi[i] = j
+    return pi
+
+
+def _combo_lut():
+    lut = [2] * 25 + [3] * 50 + [4] * 25
+    return lut
+
+
+def _search_stride(step, js, A, stride, lut):
+    n_A = len(A)
+    res = []
+    if n_A == 0:
+        return res
+    pi = _kmp_prefix(A)
+    state = [0] * stride
+    r = 0
+    jx, jy, jz, jw, jt, jf = js
+    for i in range(step):
+        val = lut[(jw & 0xFFFF) % 100]
+        jt = (jx ^ (jx << 15)) & 0xFFFFFFFF
+        jx = jy; jy = jz; jz = jw
+        jw = jw ^ (jw >> 21) ^ jt ^ (jt >> 4)
+        jf += 1
+        k = state[r]
+        while k > 0 and A[k] != val:
+            k = pi[k - 1]
+        if A[k] == val:
+            k += 1
+        if k == n_A:
+            res.append(i - stride * (n_A - 1))
+            k = pi[n_A - 1]
+        state[r] = k
+        r = (r + 1) % stride
+    return res
+
+
+def search_combo(start, step, combo_str, limit=200):
+    """調合スナイプ用乱数検索。combo_str は所持数を空白区切りで入力。"""
+    jump(start)
+    for _ in range(7):
+        descend()
+    try:
+        raw_A = list(map(int, combo_str.split()))
+    except ValueError:
+        return {'error': '数値のみを入力してください'}
+    pos_A = raw_A[3:]
+    if pos_A and pos_A[-1] == 99:
+        pos_A = pos_A[:-1]
+    if len(pos_A) <= 1:
+        return {'error': '調合データが短すぎます（もっと調合してください）'}
+    dif_A = [pos_A[i + 1] - pos_A[i] for i in range(len(pos_A) - 1)]
+    invalid = [d for d in dif_A if d not in (2, 3, 4)]
+    if invalid:
+        return {'error': f'差分に無効な値があります: {sorted(set(invalid))}（有効値: 2, 3, 4）'}
+    lut = _combo_lut()
+    js = (x, y, z, w, t, 0)
+    hits = _search_stride(step, js, dif_A, 5, lut)
+    results = []
+    for hit in hits[:limit]:
+        frame = start + hit - 5 * 3 - 15 + 2 * (len(raw_A) - 1)
+        results.append({'frame': frame, 'time': watch_str(frame)})
+    return {'results': results}
+
+
 def search_any_skill2(start, step, p, limit=200):
     """skill2 は何でもよいが必ず存在し sp2 >= 指定値、skill1 と slots は通常通り絞り込む。"""
     _id1, _sp1, _id2, _sp2, _slot, _origin, _len1, _len2 = p
