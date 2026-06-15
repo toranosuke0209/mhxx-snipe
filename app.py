@@ -101,10 +101,11 @@ def do_search():
         except (ValueError, StopIteration):
             return -1
 
+    skill2_any = (skill2_name == '__any__')
     _id1 = find_skill1_id(skill1_name)
-    _id2 = find_skill2_id(skill2_name)
+    _id2 = -1 if (skill2_any or not skill2_name) else find_skill2_id(skill2_name)
 
-    if _id1 == -1 and _id2 == -1:
+    if _id1 == -1 and _id2 == -1 and not skill2_any:
         _id1 = 0
 
     p = [_id1, sp1, _id2, sp2, slots, _origin, len(core.skill1), len(core.skill2)]
@@ -112,6 +113,8 @@ def do_search():
     try:
         if mode == 'exact':
             results = core.search(start, step, p)
+        elif skill2_any:
+            results = core.search_any_skill2(start, step, p)
         else:
             results = core.search_greater(start, step, p)
     except Exception as e:

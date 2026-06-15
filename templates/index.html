@@ -338,7 +338,7 @@ async function loadSkills() {
   const prev2 = sk2.value;
 
   sk1.innerHTML = data.skill1.map((s, i) => `<option value="${s}" data-max="${data.skill1_max[i]}">${s}</option>`).join('');
-  sk2.innerHTML = '<option value="" data-max="20">— なし —</option>' + data.skill2.map((s, i) => `<option value="${s}" data-max="${data.skill2_max[i]}">${s}</option>`).join('');
+  sk2.innerHTML = '<option value="" data-max="20">— なし —</option><option value="__any__" data-max="20">★ なんでも（スキル2あり）</option>' + data.skill2.map((s, i) => `<option value="${s}" data-max="${data.skill2_max[i]}">${s}</option>`).join('');
   orig.innerHTML = data.origin.map(s => `<option value="${s}">${s}</option>`).join('');
 
   if (prev1 && [...sk1.options].some(o => o.value === prev1)) sk1.value = prev1;
@@ -350,12 +350,15 @@ async function loadSkills() {
 
 function updateSpMax(inputId, selectEl) {
   const selected = selectEl.options[selectEl.selectedIndex];
-  const max = selected ? parseInt(selected.dataset.max || 20) : 20;
+  const isAny = selected && selected.value === '__any__';
+  const isEmpty = !selected || selected.value === '';
+  const max = (isAny || isEmpty) ? 20 : parseInt(selected.dataset.max || 20);
   const input = document.getElementById(inputId);
   const label = document.getElementById(inputId + '-max');
   input.max = max;
+  input.disabled = isEmpty;
   if (parseInt(input.value) > max) input.value = max;
-  if (label) label.textContent = '/ ' + max;
+  if (label) label.textContent = isAny ? '以上' : (isEmpty ? '' : '/ ' + max);
 }
 
 function setLang(lang) {

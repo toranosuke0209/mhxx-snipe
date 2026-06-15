@@ -316,6 +316,26 @@ def search_greater(start, step, p, limit=200):
     return results
 
 
+def search_any_skill2(start, step, p, limit=200):
+    """skill2 は何でもよいが必ず存在し sp2 >= 指定値、skill1 と slots は通常通り絞り込む。"""
+    _id1, _sp1, _id2, _sp2, _slot, _origin, _len1, _len2 = p
+    jump(start)
+    skip1 = (_id1 == -1)
+    results = []
+    for _ in range(step):
+        roll()
+        if skip1 or r0 % _len1 == _id1:
+            c = getcharm(_origin)
+            if skip1 and c[0] == c[2]:
+                continue
+            if (skip1 or c[1] >= _sp1) and c[2] != -1 and c[3] >= _sp2 and c[4] >= _slot:
+                frame = f - 7
+                results.append({'frame': frame, 'time': watch_str(frame), 'charm': charm_to_dict(c)})
+                if len(results) >= limit:
+                    break
+    return results
+
+
 def get_skill_list(pool):
     """Return list of skill names for the current color (skill1 or skill2)."""
     idx_list = skill1 if pool == 1 else skill2
