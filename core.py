@@ -286,8 +286,8 @@ def search(start, step, p, limit=200):
         roll()
         if r0 % _len1 == _id1 and (skip2 or r2 % 100 >= th and r3 % _len2 == _id2):
             c = getcharm(_origin)
-            if c[1] == _sp1 and c[4] == _slot:
-                cond = (c[3] == _sp2) if not skip2 else (c[2] == -1 or c[2] == c[0] or c[3] == 0)
+            if c[1] >= _sp1 and c[4] >= _slot:
+                cond = (c[3] >= _sp2) if not skip2 else (c[2] == -1 or c[2] == c[0] or c[3] == 0)
                 if cond:
                     frame = f - 7
                     results.append({'frame': frame, 'time': watch_str(frame), 'charm': charm_to_dict(c)})

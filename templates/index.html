@@ -358,7 +358,7 @@ function updateSpMax(inputId, selectEl) {
   input.max = max;
   input.disabled = isEmpty;
   if (parseInt(input.value) > max) input.value = max;
-  if (label) label.textContent = isAny ? '以上' : (isEmpty ? '' : '/ ' + max);
+  if (label) label.textContent = isEmpty ? '' : '以上 (max ' + max + ')';
 }
 
 function setLang(lang) {
