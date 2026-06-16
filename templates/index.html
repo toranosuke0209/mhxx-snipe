@@ -727,6 +727,7 @@ function buildCombo(containerId, options) {
 
   const input = container.querySelector('.skill-combo-input');
   let focusedIdx = -1;
+  let blurTimer = null;
 
   skillCombos[containerId] = { el: container, options, selected: null };
 
@@ -807,6 +808,7 @@ function buildCombo(containerId, options) {
   }
 
   input.addEventListener('focus', () => {
+    if (blurTimer) { clearTimeout(blurTimer); blurTimer = null; }
     input.readOnly = false;
     input.select();
     positionDropdown();
@@ -814,7 +816,8 @@ function buildCombo(containerId, options) {
   });
   input.addEventListener('input', () => renderDropdown(input.value));
   input.addEventListener('blur', () => {
-    setTimeout(() => {
+    blurTimer = setTimeout(() => {
+      blurTimer = null;
       dropdown.classList.remove('open');
       // restore label if nothing new selected
       const cur = skillCombos[containerId].selected;
