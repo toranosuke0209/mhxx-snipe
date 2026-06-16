@@ -789,6 +789,7 @@ const RARE_COLORS = {
   7:'#c04040', 6:'#4040c0', 5:'#40c060',
   4:'#c080c0', 3:'#c0c000', 2:'#8080ff', 1:'#808080'
 };
+const fmtSp = n => n > 0 ? `+${n}` : String(n);
 
 function renderResults(data) {
   const area  = document.getElementById('results-area');
@@ -805,12 +806,12 @@ function renderResults(data) {
     const c = r.charm;
     const rareColor = RARE_COLORS[c.rare] || '#888';
     const sk2cell = c.skill2
-      ? `<span class="skill-name">${c.skill2}</span> <span class="sp">+${c.sp2}</span>`
+      ? `<span class="skill-name">${c.skill2}</span> <span class="sp">${fmtSp(c.sp2)}</span>`
       : '<span style="color:#555">—</span>';
     return `<tr class="snipe-row" onclick="showSnipe(${idx})" title="クリックでスナイプ画面へ">
       <td class="frame-cell">${r.frame.toLocaleString()}</td>
       <td class="time-cell">${r.time}</td>
-      <td><span class="skill-name">${c.skill1}</span> <span class="sp">+${c.sp1}</span></td>
+      <td><span class="skill-name">${c.skill1}</span> <span class="sp">${fmtSp(c.sp1)}</span></td>
       <td>${sk2cell}</td>
       <td class="slot">${'◆'.repeat(c.slots)}${'◇'.repeat(3-c.slots)}</td>
       <td><span class="rare-badge" style="color:${rareColor}">R${c.rare}</span></td>
@@ -881,8 +882,8 @@ window.showSnipe = function(idxOrObj) {
   document.getElementById('sn-frame').textContent = r.frame.toLocaleString();
   document.getElementById('sn-time').textContent  = r.time;
 
-  const sk1 = `${c.skill1} +${c.sp1}`;
-  const sk2 = c.skill2 ? `  /  ${c.skill2} +${c.sp2}` : '';
+  const sk1 = `${c.skill1} ${fmtSp(c.sp1)}`;
+  const sk2 = c.skill2 ? `  /  ${c.skill2} ${fmtSp(c.sp2)}` : '';
   const slots = '◆'.repeat(c.slots) + '◇'.repeat(3 - c.slots);
   document.getElementById('sn-charm').textContent = sk1 + sk2 + '  ' + slots;
 
