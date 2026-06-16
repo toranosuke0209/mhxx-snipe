@@ -515,6 +515,40 @@
     <button class="metro-start-btn" id="metro-btn" onclick="metroToggle()">▶ メトロノーム開始</button>
   </div>
 
+  <!-- ── ずれ確認 ── -->
+  <div class="metro-panel" style="margin-top:16px;width:100%;max-width:700px">
+    <div class="metro-title" style="cursor:pointer;user-select:none" onclick="toggleOffsetPanel()">
+      実際に出たお守りを入力してずれを確認 <span id="offset-toggle-icon">▼</span>
+    </div>
+    <div id="sn-offset-panel">
+      <div class="combo-hint" style="margin-bottom:10px">
+        スナイプ後に実際に入手したお守りを入力すると、目標フレームとのずれを表示します。
+      </div>
+      <div class="section-title">スキル1</div>
+      <div id="result-skill1-combo" class="skill-combo" data-sp="result-sp1"></div>
+      <div class="row">
+        <label>ポイント</label>
+        <input type="number" id="result-sp1" value="1" min="-20" max="20" style="width:80px">
+      </div>
+      <div class="section-title">スキル2 (任意)</div>
+      <div id="result-skill2-combo" class="skill-combo" data-sp="result-sp2" data-nullable="1"></div>
+      <div class="row">
+        <label>ポイント</label>
+        <input type="number" id="result-sp2" value="1" min="-20" max="20" style="width:80px">
+      </div>
+      <div class="section-title">スロット</div>
+      <div class="btn-group" id="result-slot-group">
+        <button class="btn active" onclick="setResultSlot(0)">0</button>
+        <button class="btn" onclick="setResultSlot(1)">1</button>
+        <button class="btn" onclick="setResultSlot(2)">2</button>
+        <button class="btn" onclick="setResultSlot(3)">3</button>
+      </div>
+      <button class="search-btn" id="offset-search-btn" onclick="doOffsetSearch()" style="margin-top:8px">🔍 ずれを確認</button>
+      <div class="spinner" id="offset-spinner"></div>
+      <div id="offset-result" style="margin-top:12px"></div>
+    </div>
+  </div>
+
   <!-- ── COMBO SNIPE ── -->
   <div class="metro-panel" style="margin-top:16px">
     <div class="metro-title" style="cursor:pointer;user-select:none" onclick="toggleComboPanel()">
@@ -794,6 +828,8 @@ async function loadSkills() {
 
   buildCombo('skill1-combo', opts1);
   buildCombo('skill2-combo', opts2);
+  buildCombo('result-skill1-combo', opts1);
+  buildCombo('result-skill2-combo', opts2);
 }
 
 function updateSpMax() {} // kept for compat — no longer used directly
@@ -1182,6 +1218,80 @@ function applyComboFrame(idx) {
   if (!r) return;
   document.getElementById('sn-current-input').value = r.frame;
   snSetCurrentFrame();
+}
+
+// ─── ずれ確認 ───────────────────────────────────────────
+let resultSlot = 0;
+function setResultSlot(n) {
+  resultSlot = n;
+  document.querySelectorAll('#result-slot-group .btn').forEach((b, i) => b.classList.toggle('active', i === n));
+}
+function toggleOffsetPanel() {
+  const panel = document.getElementById('sn-offset-panel');
+  const icon  = document.getElementById('offset-toggle-icon');
+  const hidden = panel.style.display === 'none';
+  panel.style.display = hidden ? '' : 'none';
+  icon.textContent = hidden ? '▼' : '▶';
+}
+
+async function doOffsetSearch() {
+  const btn     = document.getElementById('offset-search-btn');
+  const spinner = document.getElementById('offset-spinner');
+  const resultEl = document.getElementById('offset-result');
+  resultEl.innerHTML = '';
+  btn.disabled = true;
+  spinner.classList.add('show');
+
+  // 目標フレーム±20000の範囲を検索
+  const center = snTarget;
+  const range  = 20000;
+  const start  = Math.max(0, center - range);
+
+  const payload = {
+    lang: currentLang, color: currentColor, mode: 'exact',
+    seed: document.getElementById('seed').value.trim(),
+    origin: document.getElementById('origin').value,
+    skill1: getComboValue('result-skill1-combo'),
+    sp1: parseInt(document.getElementById('result-sp1').value) || 1,
+    skill2: getComboValue('result-skill2-combo'),
+    sp2: parseInt(document.getElementById('result-sp2').value) || 0,
+    slots: resultSlot,
+    start: start,
+    step: range * 2,
+  };
+
+  try {
+    const res  = await fetch('/api/search', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+    const data = await res.json();
+    if (data.error) { resultEl.innerHTML = `<div class="error-msg">⚠️ ${data.error}</div>`; return; }
+    if (!data.results || data.results.length === 0) {
+      resultEl.innerHTML = '<div class="combo-hint">該当するお守りが見つかりませんでした。スキル・スロットを確認してください。</div>';
+      return;
+    }
+    // 目標フレームに最も近いものを選ぶ
+    const closest = data.results.reduce((a, b) =>
+      Math.abs(a.frame - center) < Math.abs(b.frame - center) ? a : b);
+    const diff = closest.frame - center;
+    const sign = diff > 0 ? '+' : '';
+    const color = diff === 0 ? 'var(--green)' : Math.abs(diff) <= 300 ? 'var(--yellow)' : 'var(--accent)';
+    const c = closest.charm;
+    const sk2 = (c.skill2 && c.sp2 !== 0) ? ` / ${c.skill2} ${fmtSp(c.sp2)}` : '';
+    resultEl.innerHTML = `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+        <div style="font-size:0.72rem;color:var(--text2);margin-bottom:4px">実際のフレーム</div>
+        <div style="font-family:monospace;font-size:1.2rem;color:var(--blue);font-weight:700">${closest.frame.toLocaleString()} F</div>
+        <div style="font-size:0.78rem;color:var(--text2);margin-bottom:10px">${closest.time}</div>
+        <div style="font-size:0.72rem;color:var(--text2);margin-bottom:4px">目標とのずれ</div>
+        <div style="font-family:monospace;font-size:2rem;font-weight:700;color:${color}">${sign}${diff} F</div>
+        <div style="font-size:0.78rem;color:var(--text2);margin-top:6px">${diff > 0 ? '目標より遅かった（押すのが遅い）' : diff < 0 ? '目標より早かった（押すのが早い）' : '✔ ピッタリ！'}</div>
+        <div style="font-size:0.75rem;color:var(--text2);margin-top:8px;border-top:1px solid var(--border);padding-top:8px">${c.skill1} ${fmtSp(c.sp1)}${sk2} ${'◆'.repeat(c.slots)}${'◇'.repeat(3-c.slots)}</div>
+      </div>`;
+  } catch(e) {
+    resultEl.innerHTML = `<div class="error-msg">⚠️ ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    spinner.classList.remove('show');
+  }
 }
 
 // ─── 動画解析（Switch 1080p） ─────────────────────────────
