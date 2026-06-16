@@ -264,7 +264,7 @@
     <h1>⚔️ MHXX お守りスナイプ</h1>
     <div class="subtitle">Monster Hunter XX Charm RNG Tool</div>
   </div>
-  <button class="back-btn" id="back-btn" onclick="showSearch()">← 検索に戻る</button>
+  <button class="back-btn" id="back-btn" onclick="showSearch()" style="display:none">← 検索に戻る</button>
 </header>
 
 <!-- ══════════ SCREEN: Search ══════════ -->
@@ -363,6 +363,13 @@
 <!-- ══════════ SCREEN: Snipe ══════════ -->
 <div class="screen" id="screen-snipe">
 <div class="snipe-screen">
+
+  <button onclick="showSearch()"
+    style="align-self:flex-start;background:var(--surface2);border:1px solid var(--border);
+           color:var(--text);border-radius:8px;padding:6px 16px;font-size:0.85rem;
+           cursor:pointer;margin-bottom:8px">
+    ← 検索に戻る
+  </button>
 
   <!-- Target info -->
   <div class="target-card">
