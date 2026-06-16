@@ -539,6 +539,10 @@
       <input type="number" id="sn-fpc" value="700" min="1"
         style="width:64px;padding:3px 6px;font-size:0.82rem;font-family:monospace"
         oninput="snUpdateContinueCount()">
+      <span>F　余裕</span>
+      <input type="number" id="sn-buffer" value="1800" min="0"
+        style="width:64px;padding:3px 6px;font-size:0.82rem;font-family:monospace"
+        oninput="snUpdateContinueCount()">
       <span>F</span>
     </div>
   </div>
@@ -1073,11 +1077,13 @@ function frameToTime(fr) {
 
 function snUpdateContinueCount() {
   const remain = snTarget - snFrame;
-  const fpc = parseInt(document.getElementById('sn-fpc').value) || 700;
+  const fpc    = parseInt(document.getElementById('sn-fpc').value)    || 700;
+  const buffer = parseInt(document.getElementById('sn-buffer').value) || 0;
   const el = document.getElementById('sn-continue-count');
   if (!el) return;
   if (remain <= 0) { el.textContent = '0 回'; return; }
-  el.textContent = `約 ${Math.ceil(remain / fpc).toLocaleString()} 回`;
+  const count = Math.max(0, Math.floor((remain - buffer) / fpc));
+  el.textContent = `約 ${count.toLocaleString()} 回`;
 }
 
 function snTimerTick() {
