@@ -728,7 +728,6 @@ function buildCombo(containerId, options) {
   const input = container.querySelector('.skill-combo-input');
   let focusedIdx = -1;
   let blurTimer = null;
-  let suppressScroll = false;
 
   skillCombos[containerId] = { el: container, options, selected: null };
 
@@ -810,12 +809,10 @@ function buildCombo(containerId, options) {
 
   function openDropdown() {
     if (blurTimer) { clearTimeout(blurTimer); blurTimer = null; }
-    suppressScroll = true;
     input.readOnly = false;
     input.select();
     positionDropdown();
     renderDropdown('');
-    suppressScroll = false;
     if (window.innerWidth <= 700) {
       setTimeout(() => {
         input.scrollIntoView({ behavior: 'instant', block: 'start' });
@@ -847,7 +844,6 @@ function buildCombo(containerId, options) {
   }
 
   function closeOnScroll(e) {
-    if (suppressScroll) return;
     if (dropdown.contains(e.target)) return;
     if (dropdown.classList.contains('open')) closeDropdown();
   }
@@ -865,7 +861,10 @@ function buildCombo(containerId, options) {
   }
   container._scrollHandler = closeOnScroll;
   container._touchHandler = closeOnTouch;
-  window.addEventListener('scroll', closeOnScroll, { passive: true, capture: true });
+  const isMobileDevice = ('ontouchstart' in window);
+  if (!isMobileDevice) {
+    window.addEventListener('scroll', closeOnScroll, { passive: true, capture: true });
+  }
   window.addEventListener('touchstart', closeOnTouch, { passive: true, capture: true });
   input.addEventListener('keydown', e => {
     const items = dropdown.querySelectorAll('.skill-combo-option');
