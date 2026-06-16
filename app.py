@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import core
+import video_analyze
 
 app = Flask(__name__)
 
@@ -151,6 +152,36 @@ def do_search_combo():
 
     if 'error' in result:
         return jsonify(result), 400
+    return jsonify(result)
+
+
+@app.route('/api/video_frame', methods=['POST'])
+def video_first_frame():
+    """動画の最初のフレームをJPEGで返す（領域選択用）"""
+    if 'video' not in request.files:
+        return jsonify({'error': 'No video file'}), 400
+    f = request.files['video']
+    try:
+        result = video_analyze.extract_first_frame(f)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    return jsonify(result)
+
+
+@app.route('/api/video_analyze', methods=['POST'])
+def video_analyze_route():
+    """動画から所持数の変化を自動抽出する"""
+    if 'video' not in request.files:
+        return jsonify({'error': 'No video file'}), 400
+    f = request.files['video']
+    try:
+        x      = int(request.form.get('x', 0))
+        y      = int(request.form.get('y', 0))
+        width  = int(request.form.get('w', 100))
+        height = int(request.form.get('h', 40))
+        result = video_analyze.extract_counts(f, x, y, width, height)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     return jsonify(result)
 
 
