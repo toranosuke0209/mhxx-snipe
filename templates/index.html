@@ -264,7 +264,7 @@
     <h1>⚔️ MHXX お守りスナイプ</h1>
     <div class="subtitle">Monster Hunter XX Charm RNG Tool</div>
   </div>
-  <button class="back-btn" id="back-btn" onclick="showSearch()">← 検索に戻る</button>
+  <button class="back-btn" id="back-btn" onclick="showSearch()" style="display:none">← 検索に戻る</button>
 </header>
 
 <!-- ══════════ SCREEN: Search ══════════ -->
@@ -364,6 +364,13 @@
 <div class="screen" id="screen-snipe">
 <div class="snipe-screen">
 
+  <button onclick="showSearch()"
+    style="align-self:flex-start;background:var(--surface2);border:1px solid var(--border);
+           color:var(--text);border-radius:8px;padding:6px 16px;font-size:0.85rem;
+           cursor:pointer;margin-bottom:8px">
+    ← 検索に戻る
+  </button>
+
   <!-- Target info -->
   <div class="target-card">
     <div>
@@ -453,6 +460,36 @@
         自宅で調合ボタン長押し→複数個の弾を調合し、所持数の変化を空白区切りで入力。<br>
         例) 0個→3個→6個→9個… なら <code>00 03 06 09…</code><br>
         特定したフレームは自動的に「③ 現在F」へセットされます。
+      </div>
+
+      <!-- 動画自動解析 -->
+      <div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px">
+        <div style="font-size:0.8rem;font-weight:700;margin-bottom:6px;color:var(--accent)">📹 動画から自動入力（Switch 1080p）</div>
+        <input type="file" id="video-file" accept="video/*"
+          style="font-size:0.78rem;width:100%;margin-bottom:6px"
+          onchange="videoLoadFirstFrame()">
+
+        <!-- 領域選択キャンバス（最初のフレーム表示） -->
+        <div id="video-region-area" style="display:none;margin-bottom:8px">
+          <div style="font-size:0.75rem;color:var(--text2);margin-bottom:4px">
+            所持数が表示されている領域をドラッグで囲んでください
+          </div>
+          <div style="position:relative;display:inline-block">
+            <img id="video-preview-img" style="max-width:100%;display:block;border-radius:4px">
+            <canvas id="video-region-canvas"
+              style="position:absolute;top:0;left:0;cursor:crosshair"
+              onmousedown="regionStart(event)"
+              onmousemove="regionMove(event)"
+              onmouseup="regionEnd(event)"></canvas>
+          </div>
+          <div style="font-size:0.75rem;color:var(--text2);margin-top:4px" id="video-region-hint">未選択</div>
+          <button onclick="videoAnalyze()"
+            style="margin-top:6px;background:var(--accent);color:#fff;border:none;
+                   border-radius:6px;padding:5px 14px;font-size:0.82rem;cursor:pointer"
+            id="video-analyze-btn" disabled>解析して自動入力</button>
+          <div class="spinner" id="video-spinner"></div>
+        </div>
+        <div id="video-error" style="font-size:0.78rem;color:#f87;margin-top:4px"></div>
       </div>
 
       <div class="section-title">シード値 (任意)</div>
@@ -940,6 +977,119 @@ function applyComboFrame(idx) {
   if (!r) return;
   document.getElementById('sn-current-input').value = r.frame;
   snSetCurrentFrame();
+}
+
+// ─── 動画解析（Switch 1080p） ─────────────────────────────
+let videoNativeW = 1, videoNativeH = 1;  // 動画の実解像度
+let videoRegion = null;   // {x, y, w, h} (実解像度座標)
+let regionDrag  = null;   // ドラッグ中の状態
+
+async function videoLoadFirstFrame() {
+  const file = document.getElementById('video-file').files[0];
+  if (!file) return;
+  const errEl = document.getElementById('video-error');
+  errEl.textContent = '';
+
+  const fd = new FormData();
+  fd.append('video', file);
+
+  const spinner = document.getElementById('video-spinner');
+  spinner.classList.add('show');
+  try {
+    const res  = await fetch('/api/video_frame', {method: 'POST', body: fd});
+    const data = await res.json();
+    if (data.error) { errEl.textContent = '⚠️ ' + data.error; return; }
+
+    const img = document.getElementById('video-preview-img');
+    img.src = data.image;
+    videoNativeW = data.width;
+    videoNativeH = data.height;
+    img.onload = () => {
+      const canvas = document.getElementById('video-region-canvas');
+      canvas.width  = img.offsetWidth;
+      canvas.height = img.offsetHeight;
+    };
+    document.getElementById('video-region-area').style.display = '';
+    videoRegion = null;
+    document.getElementById('video-analyze-btn').disabled = true;
+    document.getElementById('video-region-hint').textContent = '未選択';
+  } catch(e) {
+    errEl.textContent = '⚠️ ' + e.message;
+  } finally {
+    spinner.classList.remove('show');
+  }
+}
+
+function regionStart(e) {
+  const canvas = document.getElementById('video-region-canvas');
+  const rect = canvas.getBoundingClientRect();
+  regionDrag = {sx: e.clientX - rect.left, sy: e.clientY - rect.top};
+}
+function regionMove(e) {
+  if (!regionDrag) return;
+  const canvas = document.getElementById('video-region-canvas');
+  const rect = canvas.getBoundingClientRect();
+  const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(regionDrag.sx, regionDrag.sy, cx - regionDrag.sx, cy - regionDrag.sy);
+  ctx.fillStyle = 'rgba(0,229,255,0.08)';
+  ctx.fillRect(regionDrag.sx, regionDrag.sy, cx - regionDrag.sx, cy - regionDrag.sy);
+}
+function regionEnd(e) {
+  if (!regionDrag) return;
+  const canvas = document.getElementById('video-region-canvas');
+  const rect = canvas.getBoundingClientRect();
+  const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+  const scaleX = videoNativeW / canvas.width;
+  const scaleY = videoNativeH / canvas.height;
+  const x = Math.round(Math.min(regionDrag.sx, cx) * scaleX);
+  const y = Math.round(Math.min(regionDrag.sy, cy) * scaleY);
+  const w = Math.round(Math.abs(cx - regionDrag.sx) * scaleX);
+  const h = Math.round(Math.abs(cy - regionDrag.sy) * scaleY);
+  regionDrag = null;
+  if (w < 10 || h < 5) return;
+  videoRegion = {x, y, w, h};
+  document.getElementById('video-region-hint').textContent = `選択済: x=${x} y=${y} w=${w} h=${h}`;
+  document.getElementById('video-analyze-btn').disabled = false;
+}
+
+async function videoAnalyze() {
+  if (!videoRegion) return;
+  const file = document.getElementById('video-file').files[0];
+  if (!file) return;
+  const errEl  = document.getElementById('video-error');
+  errEl.textContent = '';
+  const spinner = document.getElementById('video-spinner');
+  spinner.classList.add('show');
+  document.getElementById('video-analyze-btn').disabled = true;
+
+  const fd = new FormData();
+  fd.append('video', file);
+  fd.append('x', videoRegion.x);
+  fd.append('y', videoRegion.y);
+  fd.append('w', videoRegion.w);
+  fd.append('h', videoRegion.h);
+
+  try {
+    const res  = await fetch('/api/video_analyze', {method: 'POST', body: fd});
+    const data = await res.json();
+    if (data.error) {
+      errEl.textContent = '⚠️ ' + data.error + (data.todo ? '（テンプレート未実装）' : '');
+      return;
+    }
+    document.getElementById('sn-combo-str').value = data.combo_str;
+    errEl.style.color = '#6f6';
+    errEl.textContent = `✔ ${data.counts.length}件検出 → テキストエリアに入力しました`;
+    setTimeout(() => { errEl.textContent = ''; errEl.style.color = ''; }, 4000);
+  } catch(e) {
+    errEl.textContent = '⚠️ ' + e.message;
+  } finally {
+    spinner.classList.remove('show');
+    document.getElementById('video-analyze-btn').disabled = false;
+  }
 }
 </script>
 </body>
