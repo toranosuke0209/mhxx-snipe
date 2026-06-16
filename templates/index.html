@@ -817,11 +817,9 @@ function buildCombo(containerId, options) {
     renderDropdown('');
     if (window.innerWidth <= 700) {
       setTimeout(() => {
-        input.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        setTimeout(() => {
-          positionDropdown();
-          suppressScroll = false;
-        }, 600);
+        input.scrollIntoView({ behavior: 'instant', block: 'start' });
+        positionDropdown();
+        suppressScroll = false;
       }, 50);
     } else {
       suppressScroll = false;
