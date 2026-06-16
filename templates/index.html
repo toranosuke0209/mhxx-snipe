@@ -813,16 +813,11 @@ function buildCombo(containerId, options) {
     if (blurTimer) { clearTimeout(blurTimer); blurTimer = null; }
     input.readOnly = false;
     input.select();
-    if (window.innerWidth <= 700) {
-      input.scrollIntoView({ behavior: 'instant', block: 'start' });
-      setTimeout(() => {
-        positionDropdown();
-        renderDropdown('');
-      }, 300);
-    } else {
+    input.scrollIntoView({ behavior: 'instant', block: 'start' });
+    setTimeout(() => {
       positionDropdown();
       renderDropdown('');
-    }
+    }, window.innerWidth <= 700 ? 300 : 50);
   }
 
   input.addEventListener('focus', openDropdown);
