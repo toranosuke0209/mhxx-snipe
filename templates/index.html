@@ -829,7 +829,8 @@ function buildCombo(containerId, options) {
     }, 150);
   });
 
-  function closeOnScroll() {
+  function closeOnScroll(e) {
+    if (dropdown.contains(e.target)) return;
     if (dropdown.classList.contains('open')) {
       dropdown.classList.remove('open');
       const cur = skillCombos[containerId].selected;
