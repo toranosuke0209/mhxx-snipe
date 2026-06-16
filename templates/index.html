@@ -815,14 +815,12 @@ function buildCombo(containerId, options) {
     input.select();
     positionDropdown();
     renderDropdown('');
+    suppressScroll = false;
     if (window.innerWidth <= 700) {
       setTimeout(() => {
         input.scrollIntoView({ behavior: 'instant', block: 'start' });
         positionDropdown();
-        suppressScroll = false;
       }, 50);
-    } else {
-      suppressScroll = false;
     }
   }
 
@@ -840,22 +838,35 @@ function buildCombo(containerId, options) {
     }, 150);
   });
 
+  function closeDropdown() {
+    dropdown.classList.remove('open');
+    const cur = skillCombos[containerId].selected;
+    if (cur) input.value = cur.label;
+    input.readOnly = true;
+    input.blur();
+  }
+
   function closeOnScroll(e) {
     if (suppressScroll) return;
     if (dropdown.contains(e.target)) return;
-    if (dropdown.classList.contains('open')) {
-      dropdown.classList.remove('open');
-      const cur = skillCombos[containerId].selected;
-      if (cur) input.value = cur.label;
-      input.readOnly = true;
-      input.blur();
-    }
+    if (dropdown.classList.contains('open')) closeDropdown();
   }
+
+  function closeOnTouch(e) {
+    if (dropdown.contains(e.target) || container.contains(e.target)) return;
+    if (dropdown.classList.contains('open')) closeDropdown();
+  }
+
   if (container._scrollHandler) {
     window.removeEventListener('scroll', container._scrollHandler, { capture: true });
   }
+  if (container._touchHandler) {
+    window.removeEventListener('touchstart', container._touchHandler, { capture: true });
+  }
   container._scrollHandler = closeOnScroll;
+  container._touchHandler = closeOnTouch;
   window.addEventListener('scroll', closeOnScroll, { passive: true, capture: true });
+  window.addEventListener('touchstart', closeOnTouch, { passive: true, capture: true });
   input.addEventListener('keydown', e => {
     const items = dropdown.querySelectorAll('.skill-combo-option');
     if (e.key === 'ArrowDown') {
