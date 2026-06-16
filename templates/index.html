@@ -268,9 +268,8 @@
       color: var(--text2); pointer-events: none; font-size: 0.7rem;
     }
     .skill-combo-dropdown {
-      display: none; position: absolute; z-index: 999;
-      left: 0; right: -120px; /* extend rightward for 2-col width */
-      top: calc(100% + 3px);
+      display: none; position: fixed; z-index: 9999;
+      width: 560px;
       background: var(--surface); border: 1px solid var(--accent); border-radius: 8px;
       max-height: 280px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
       padding: 6px;
@@ -604,13 +603,20 @@ function buildCombo(containerId, options) {
   const prev = skillCombos[containerId]?.selected?.value;
 
   // Build or reuse inner structure
+  // Remove old dropdown if rebuilding
+  const oldDd = container._dropdown;
+  if (oldDd) oldDd.remove();
+
   container.innerHTML = `
     <input class="skill-combo-input" type="text" placeholder="スキルを検索..." autocomplete="off" readonly>
-    <span class="skill-combo-arrow">▼</span>
-    <div class="skill-combo-dropdown"></div>`;
+    <span class="skill-combo-arrow">▼</span>`;
 
-  const input    = container.querySelector('.skill-combo-input');
-  const dropdown = container.querySelector('.skill-combo-dropdown');
+  const dropdown = document.createElement('div');
+  dropdown.className = 'skill-combo-dropdown';
+  document.body.appendChild(dropdown);
+  container._dropdown = dropdown;
+
+  const input = container.querySelector('.skill-combo-input');
   let focusedIdx = -1;
 
   skillCombos[containerId] = { el: container, options, selected: null };
@@ -677,9 +683,16 @@ function buildCombo(containerId, options) {
     if (spLabel) spLabel.textContent = isEmpty ? '' : `以上 (max ${max})`;
   }
 
+  function positionDropdown() {
+    const rect = input.getBoundingClientRect();
+    dropdown.style.top  = (rect.bottom + 3) + 'px';
+    dropdown.style.left = rect.left + 'px';
+  }
+
   input.addEventListener('focus', () => {
     input.readOnly = false;
     input.select();
+    positionDropdown();
     renderDropdown('');
   });
   input.addEventListener('input', () => renderDropdown(input.value));
