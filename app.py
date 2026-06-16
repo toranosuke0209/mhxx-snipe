@@ -113,10 +113,10 @@ def do_search():
     p = [_id1, sp1, _id2, sp2, slots, _origin, len(core.skill1), len(core.skill2)]
 
     try:
-        if mode == 'exact':
-            results = core.search(start, step, p)
-        elif skill2_any:
+        if skill2_any:
             results = core.search_any_skill2(start, step, p)
+        elif mode == 'exact':
+            results = core.search(start, step, p)
         else:
             results = core.search_greater(start, step, p)
     except Exception as e:
