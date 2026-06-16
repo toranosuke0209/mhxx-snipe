@@ -310,12 +310,6 @@
   <aside class="sidebar">
 
     <!-- ── CHARM SEARCH PANEL ── -->
-    <div class="section-title">言語 / Language</div>
-    <div class="btn-group">
-      <button class="btn active" id="lang-ja" onclick="setLang('ja')">日本語</button>
-      <button class="btn" id="lang-en" onclick="setLang('en')">English</button>
-    </div>
-
     <div class="section-title">お守りカラー</div>
     <div class="btn-group">
       <button class="btn blue active"   id="color-blue"   onclick="setColor('blue')">風化 Blue</button>
@@ -762,12 +756,6 @@ async function loadSkills() {
 
 function updateSpMax() {} // kept for compat — no longer used directly
 
-function setLang(lang) {
-  currentLang = lang;
-  document.querySelectorAll('[id^=lang-]').forEach(b => b.classList.remove('active'));
-  document.getElementById('lang-' + lang).classList.add('active');
-  loadSkills();
-}
 function setColor(color) {
   currentColor = color;
   document.querySelectorAll('[id^=color-]').forEach(b => b.classList.remove('active'));
