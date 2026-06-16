@@ -115,6 +115,13 @@
       padding: 2px 10px; border-radius: 99px;
     }
 
+    .fav-btn { background: none; border: none; cursor: pointer; font-size: 1rem; padding: 2px 4px; opacity: 0.4; transition: opacity 0.15s; }
+    .fav-btn:hover, .fav-btn.active { opacity: 1; }
+    .fav-panel { margin-top: 24px; }
+    .fav-panel-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .fav-panel-header h2 { font-size: 1rem; font-weight: 700; }
+    .fav-empty { color: var(--text2); font-size: 0.85rem; padding: 8px 0; }
+
     .results-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     .results-table th {
       background: var(--surface); padding: 8px 12px; text-align: left;
@@ -447,6 +454,15 @@
 
   <main class="main">
     <div id="error-area"></div>
+
+    <!-- Favorites -->
+    <div class="fav-panel" id="fav-panel" style="display:none">
+      <div class="fav-panel-header">
+        <h2>★ お気に入り</h2>
+        <button class="ctrl-btn" style="font-size:0.75rem;padding:3px 10px" onclick="clearFavs()">すべて削除</button>
+      </div>
+      <div id="fav-area"><div class="fav-empty">お気に入りはありません</div></div>
+    </div>
 
     <!-- Charm results -->
     <div id="charm-results-panel">
@@ -951,6 +967,82 @@ const RARE_COLORS = {
 };
 const fmtSp = n => n > 0 ? `+${n}` : String(n);
 
+// ── Favorites ──────────────────────────────────
+function favCharmKey(r) {
+  const c = r.charm;
+  return `${r.frame}|${c.skill1}|${c.sp1}|${c.skill2||''}|${c.sp2||0}|${c.slots}|${c.rare}`;
+}
+function favLoad() {
+  try { return JSON.parse(localStorage.getItem('mhxx_favs') || '[]'); } catch { return []; }
+}
+function favSave(list) { localStorage.setItem('mhxx_favs', JSON.stringify(list)); }
+function favHas(key) { return favLoad().some(f => f.key === key); }
+
+function toggleFav(idx, btn) {
+  const r = searchResults[idx];
+  if (!r) return;
+  const key = favCharmKey(r);
+  let list = favLoad();
+  if (list.some(f => f.key === key)) {
+    list = list.filter(f => f.key !== key);
+    btn.textContent = '☆'; btn.classList.remove('active');
+  } else {
+    list.push({ key, result: r });
+    btn.textContent = '★'; btn.classList.add('active');
+  }
+  favSave(list);
+  renderFavs();
+}
+
+function clearFavs() {
+  if (!confirm('お気に入りをすべて削除しますか？')) return;
+  favSave([]);
+  renderFavs();
+  document.querySelectorAll('.fav-btn.active').forEach(b => {
+    b.textContent = '☆'; b.classList.remove('active');
+  });
+}
+
+function removeFav(key) {
+  favSave(favLoad().filter(f => f.key !== key));
+  renderFavs();
+  document.querySelectorAll('.fav-btn.active').forEach(b => {
+    const idx = parseInt(b.getAttribute('data-idx'));
+    if (!isNaN(idx) && favCharmKey(searchResults[idx]) === key) {
+      b.textContent = '☆'; b.classList.remove('active');
+    }
+  });
+}
+
+let favResults = [];
+
+function renderFavs() {
+  const list = favLoad();
+  const panel = document.getElementById('fav-panel');
+  const area  = document.getElementById('fav-area');
+  if (!list.length) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = '';
+  favResults = list.map(f => f.result);
+  const rows = list.map((f, i) => {
+    const r = f.result; const c = r.charm;
+    const rareColor = RARE_COLORS[c.rare] || '#888';
+    const sk2 = (c.skill2 && c.sp2 !== 0) ? ` / ${c.skill2} ${fmtSp(c.sp2)}` : '';
+    return `<tr class="snipe-row" onclick="showSnipe(favResults[${i}])">
+      <td class="frame-cell" data-label="フレーム">${r.frame.toLocaleString()}</td>
+      <td class="time-cell" data-label="時間">${r.time}</td>
+      <td data-label="スキル">${c.skill1} ${fmtSp(c.sp1)}${sk2}</td>
+      <td class="slot" data-label="スロット">${'◆'.repeat(c.slots)}${'◇'.repeat(3-c.slots)}</td>
+      <td data-label="レア"><span class="rare-badge" style="color:${rareColor}">R${c.rare}</span></td>
+      <td onclick="event.stopPropagation()"><button class="fav-btn active" onclick="removeFav('${f.key}')" title="削除">★</button></td>
+    </tr>`;
+  }).join('');
+  area.innerHTML = `<table class="results-table"><tbody>${rows}</tbody></table>`;
+}
+// ───────────────────────────────────────────────
+
 function renderResults(data) {
   const area  = document.getElementById('results-area');
   const badge = document.getElementById('count-badge');
@@ -968,6 +1060,8 @@ function renderResults(data) {
     const sk2cell = (c.skill2 && c.sp2 !== 0)
       ? `<span class="skill-name">${c.skill2}</span> <span class="sp">${fmtSp(c.sp2)}</span>`
       : '<span style="color:#555">—</span>';
+    const favKey = favCharmKey(r);
+    const isFav  = favHas(favKey);
     return `<tr class="snipe-row" onclick="showSnipe(${idx})" title="クリックでスナイプ画面へ">
       <td class="frame-cell" data-label="フレーム">${r.frame.toLocaleString()}</td>
       <td class="time-cell" data-label="時間">${r.time}</td>
@@ -976,12 +1070,13 @@ function renderResults(data) {
       <td class="slot" data-label="スロット">${'◆'.repeat(c.slots)}${'◇'.repeat(3-c.slots)}</td>
       <td data-label="レア"><span class="rare-badge" style="color:${rareColor}">R${c.rare}</span></td>
       <td class="snipe-hint">▶ スナイプ</td>
+      <td onclick="event.stopPropagation()"><button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav(${idx},this)" title="お気に入り">${isFav ? '★' : '☆'}</button></td>
     </tr>`;
   }).join('');
 
   area.innerHTML = `<table class="results-table">
     <thead><tr>
-      <th>フレーム</th><th>時間</th><th>スキル1</th><th>スキル2</th><th>スロット</th><th>レア</th><th></th>
+      <th>フレーム</th><th>時間</th><th>スキル1</th><th>スキル2</th><th>スロット</th><th>レア</th><th></th><th></th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
@@ -1261,6 +1356,7 @@ function metroSyncFromNumber() {
 }
 
 loadSkills();
+renderFavs();
 
 // ─── Combo snipe (on snipe screen) ───────────────────────
 function toggleComboPanel() {
