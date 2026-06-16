@@ -1051,6 +1051,23 @@ function snTimerTick() {
   } else if (remain === 0) {
     rem.textContent = '✔ 目標フレーム！';
     rem.className = 'counter-remain ok';
+    // Beep notification
+    try {
+      const ctx = metroGetCtx();
+      if (ctx.state === 'suspended') ctx.resume();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 1000;
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.3);
+    } catch(e) {}
+    // Flash screen
+    document.body.classList.add('flash');
+    setTimeout(() => document.body.classList.remove('flash'), 400);
+    // Auto-stop timer
+    snTimerStop();
   } else {
     rem.textContent = `目標を ${Math.abs(remain)} F 超過`;
     rem.className = 'counter-remain';
