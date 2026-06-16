@@ -268,13 +268,25 @@
       color: var(--text2); pointer-events: none; font-size: 0.7rem;
     }
     .skill-combo-dropdown {
-      display: none; position: absolute; z-index: 999; width: 100%; top: calc(100% + 3px);
+      display: none; position: absolute; z-index: 999;
+      left: 0; right: -240px; /* extend rightward for 3-col width */
+      top: calc(100% + 3px);
       background: var(--surface); border: 1px solid var(--accent); border-radius: 8px;
-      max-height: 240px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      max-height: 280px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      padding: 6px;
     }
     .skill-combo-dropdown.open { display: block; }
+    .skill-combo-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+    }
+    .skill-combo-special-row {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; margin-bottom: 4px;
+      border-bottom: 1px solid var(--border); padding-bottom: 4px;
+    }
     .skill-combo-option {
-      padding: 8px 12px; font-size: 0.85rem; cursor: pointer; transition: background 0.1s;
+      padding: 6px 10px; font-size: 0.82rem; cursor: pointer;
+      transition: background 0.1s; border-radius: 4px; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
     }
     .skill-combo-option:hover,
     .skill-combo-option.focused { background: rgba(233,69,96,0.18); }
@@ -618,18 +630,29 @@ function buildCombo(containerId, options) {
     if (!filtered.length) {
       dropdown.innerHTML = '<div class="skill-combo-empty">該当なし</div>';
     } else {
-      dropdown.innerHTML = filtered.map((o, i) => {
-        const label = q
-          ? o.label.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'),
-              '<mark>$1</mark>')
-          : o.label;
-        const special = (o.value === '' || o.value === '__any__') ? ' special' : '';
-        return `<div class="skill-combo-option${special}" data-idx="${i}" data-filtered-idx="${i}">${label}</div>`;
-      }).join('');
-      dropdown.querySelectorAll('.skill-combo-option').forEach((el, i) => {
+      const escape = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const hl = (label) => q
+        ? label.replace(new RegExp(`(${escape(q)})`, 'gi'), '<mark>$1</mark>')
+        : label;
+
+      const specials = filtered.filter(o => o.value === '' || o.value === '__any__');
+      const normals  = filtered.filter(o => o.value !== '' && o.value !== '__any__');
+
+      const specialHtml = specials.length
+        ? `<div class="skill-combo-special-row">${specials.map((o,i) =>
+            `<div class="skill-combo-option special" data-i="${i}">${hl(o.label)}</div>`
+          ).join('')}</div>` : '';
+
+      const normalHtml = normals.length
+        ? `<div class="skill-combo-grid">${normals.map((o, i) =>
+            `<div class="skill-combo-option" data-i="${specials.length + i}">${hl(o.label)}</div>`
+          ).join('')}</div>` : '';
+
+      dropdown.innerHTML = specialHtml + normalHtml;
+      dropdown.querySelectorAll('.skill-combo-option').forEach(el => {
         el.addEventListener('mousedown', e => {
           e.preventDefault();
-          selectOption(filtered[i]);
+          selectOption(filtered[parseInt(el.dataset.i)]);
         });
       });
     }
