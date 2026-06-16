@@ -973,40 +973,40 @@ function favCharmKey(r) {
   const c = r.charm;
   return `${r.frame}|${c.skill1}|${c.sp1}|${c.skill2||''}|${c.sp2||0}|${c.slots}|${c.rare}`;
 }
-function favLoad() {
-  try { return JSON.parse(localStorage.getItem('mhxx_favs') || '[]'); } catch { return []; }
-}
-function favSave(list) { localStorage.setItem('mhxx_favs', JSON.stringify(list)); }
-function favHas(key) { return favLoad().some(f => f.key === key); }
+// favHas checks the in-memory cache populated by the last renderFavs call
+let _favKeySet = new Set();
+function favHas(key) { return _favKeySet.has(key); }
 
-function toggleFav(idx, btn) {
+async function toggleFav(idx, btn) {
   const r = searchResults[idx];
   if (!r) return;
   const key = favCharmKey(r);
-  let list = favLoad();
-  if (list.some(f => f.key === key)) {
-    list = list.filter(f => f.key !== key);
+  if (_favKeySet.has(key)) {
+    await fetch(`/api/favs/${encodeURIComponent(key)}`, { method: 'DELETE' });
     btn.textContent = '☆'; btn.classList.remove('active');
   } else {
-    list.push({ key, result: r });
+    await fetch('/api/favs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, result: r }),
+    });
     btn.textContent = '★'; btn.classList.add('active');
   }
-  favSave(list);
-  renderFavs();
+  await renderFavs();
 }
 
-function clearFavs() {
+async function clearFavs() {
   if (!confirm('お気に入りをすべて削除しますか？')) return;
-  favSave([]);
-  renderFavs();
+  await fetch('/api/favs', { method: 'DELETE' });
+  await renderFavs();
   document.querySelectorAll('.fav-btn.active').forEach(b => {
     b.textContent = '☆'; b.classList.remove('active');
   });
 }
 
-function removeFav(key) {
-  favSave(favLoad().filter(f => f.key !== key));
-  renderFavs();
+async function removeFav(key) {
+  await fetch(`/api/favs/${encodeURIComponent(key)}`, { method: 'DELETE' });
+  await renderFavs();
   document.querySelectorAll('.fav-btn.active').forEach(b => {
     const idx = parseInt(b.getAttribute('data-idx'));
     if (!isNaN(idx) && favCharmKey(searchResults[idx]) === key) {
@@ -1017,8 +1017,11 @@ function removeFav(key) {
 
 let favResults = [];
 
-function renderFavs() {
-  const list = favLoad();
+async function renderFavs() {
+  const resp = await fetch('/api/favs');
+  const data = await resp.json();
+  const list = data.favs || [];
+  _favKeySet = new Set(list.map(f => f.key));
   const panel = document.getElementById('fav-panel');
   const area  = document.getElementById('fav-area');
   if (!list.length) {

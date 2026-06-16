@@ -1,8 +1,24 @@
 from flask import Flask, render_template, request, jsonify
 import core
 import video_analyze
+import sqlite3
+import os
 
 app = Flask(__name__)
+
+DB_PATH = os.path.join(os.path.dirname(__file__), 'favs.db')
+
+
+def get_db():
+    con = sqlite3.connect(DB_PATH)
+    con.row_factory = sqlite3.Row
+    con.execute('''CREATE TABLE IF NOT EXISTS favs (
+        key TEXT PRIMARY KEY,
+        result_json TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )''')
+    con.commit()
+    return con
 
 COLOR_SETTERS = {
     'blue': core.set_blue,
@@ -183,6 +199,50 @@ def video_analyze_route():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     return jsonify(result)
+
+
+@app.route('/api/favs', methods=['GET'])
+def favs_list():
+    con = get_db()
+    rows = con.execute('SELECT key, result_json FROM favs ORDER BY created_at DESC').fetchall()
+    con.close()
+    return jsonify({'favs': [{'key': r['key'], 'result': __import__('json').loads(r['result_json'])} for r in rows]})
+
+
+@app.route('/api/favs', methods=['POST'])
+def favs_upsert():
+    import json
+    data = request.json
+    key = data.get('key')
+    result = data.get('result')
+    if not key or result is None:
+        return jsonify({'error': 'key and result required'}), 400
+    con = get_db()
+    con.execute(
+        'INSERT INTO favs (key, result_json) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET result_json=excluded.result_json',
+        (key, json.dumps(result))
+    )
+    con.commit()
+    con.close()
+    return jsonify({'ok': True})
+
+
+@app.route('/api/favs/<path:key>', methods=['DELETE'])
+def favs_delete(key):
+    con = get_db()
+    con.execute('DELETE FROM favs WHERE key = ?', (key,))
+    con.commit()
+    con.close()
+    return jsonify({'ok': True})
+
+
+@app.route('/api/favs', methods=['DELETE'])
+def favs_clear():
+    con = get_db()
+    con.execute('DELETE FROM favs')
+    con.commit()
+    con.close()
+    return jsonify({'ok': True})
 
 
 if __name__ == '__main__':
