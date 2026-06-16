@@ -572,8 +572,8 @@ function showSnipe(result) {
   document.getElementById('sn-frame').textContent = result.frame.toLocaleString();
   document.getElementById('sn-time').textContent  = result.time;
 
-  const sk1 = `${c.skill1} +${c.sp1}`;
-  const sk2 = c.skill2 ? `  /  ${c.skill2} +${c.sp2}` : '';
+  const sk1 = `${c.skill1} ${fmtSp(c.sp1)}`;
+  const sk2 = (c.skill2 && c.sp2 !== 0) ? `  /  ${c.skill2} ${fmtSp(c.sp2)}` : '';
   const slots = '◆'.repeat(c.slots) + '◇'.repeat(3 - c.slots);
   document.getElementById('sn-charm').textContent = sk1 + sk2 + '  ' + slots;
 
@@ -805,7 +805,7 @@ function renderResults(data) {
   const rows = data.results.map((r, idx) => {
     const c = r.charm;
     const rareColor = RARE_COLORS[c.rare] || '#888';
-    const sk2cell = c.skill2
+    const sk2cell = (c.skill2 && c.sp2 !== 0)
       ? `<span class="skill-name">${c.skill2}</span> <span class="sp">${fmtSp(c.sp2)}</span>`
       : '<span style="color:#555">—</span>';
     return `<tr class="snipe-row" onclick="showSnipe(${idx})" title="クリックでスナイプ画面へ">
@@ -883,7 +883,7 @@ window.showSnipe = function(idxOrObj) {
   document.getElementById('sn-time').textContent  = r.time;
 
   const sk1 = `${c.skill1} ${fmtSp(c.sp1)}`;
-  const sk2 = c.skill2 ? `  /  ${c.skill2} ${fmtSp(c.sp2)}` : '';
+  const sk2 = (c.skill2 && c.sp2 !== 0) ? `  /  ${c.skill2} ${fmtSp(c.sp2)}` : '';
   const slots = '◆'.repeat(c.slots) + '◇'.repeat(3 - c.slots);
   document.getElementById('sn-charm').textContent = sk1 + sk2 + '  ' + slots;
 
