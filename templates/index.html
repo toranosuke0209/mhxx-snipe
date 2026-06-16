@@ -252,8 +252,42 @@
 
     @media (max-width: 700px) {
       .layout { grid-template-columns: 1fr; }
-      .sidebar { border-right: none; border-bottom: 1px solid var(--border); max-height: none; }
-      .counter-current { font-size: 2.8rem; }
+      .sidebar {
+        border-right: none; border-bottom: 1px solid var(--border);
+        max-height: none; padding: 14px;
+      }
+      .main { padding: 12px; }
+
+      /* ヘッダー */
+      header { padding: 10px 14px; }
+      header h1 { font-size: 1rem; }
+      header .subtitle { display: none; }
+
+      /* 検索ボタン・入力 */
+      .btn { padding: 10px 8px; font-size: 0.85rem; }
+      select, input[type=text], input[type=number] { font-size: 1rem; padding: 9px 10px; }
+      .search-btn { padding: 14px; font-size: 1.05rem; }
+
+      /* 結果テーブル → カード形式 */
+      .results-table thead { display: none; }
+      .results-table tr { display: block; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; }
+      .results-table td { display: block; padding: 6px 12px; border-bottom: none; }
+      .results-table td:first-child { padding-top: 10px; }
+      .results-table td:last-child { padding-bottom: 10px; }
+      .snipe-hint { text-align: right; color: var(--accent); font-weight: 700; }
+
+      /* スナイプ画面 */
+      .snipe-screen { padding: 14px 12px; gap: 16px; }
+      .target-card { padding: 14px 16px; gap: 14px; }
+      .counter-current { font-size: 3rem; }
+      .counter-remain { font-size: 1.2rem; }
+      .ctrl-btn { padding: 14px 20px; font-size: 1rem; flex: 1; }
+      .metro-panel { padding: 16px; max-width: 100%; }
+      .metro-row { flex-wrap: wrap; }
+
+      /* スキルコンボボックスのドロップダウン幅 */
+      .skill-combo-dropdown { width: calc(100vw - 28px) !important; left: 0 !important; }
+      .skill-combo-grid { grid-template-columns: repeat(2, 1fr); }
     }
     /* ── Skill combobox ── */
     .skill-combo { position: relative; margin-bottom: 4px; }
@@ -679,8 +713,16 @@ function buildCombo(containerId, options) {
 
   function positionDropdown() {
     const rect = input.getBoundingClientRect();
-    dropdown.style.top  = (rect.bottom + 3) + 'px';
-    dropdown.style.left = rect.left + 'px';
+    const isMobile = window.innerWidth <= 700;
+    if (isMobile) {
+      dropdown.style.top  = (rect.bottom + 3) + 'px';
+      dropdown.style.left = '14px';
+      dropdown.style.width = (window.innerWidth - 28) + 'px';
+    } else {
+      dropdown.style.top  = (rect.bottom + 3) + 'px';
+      dropdown.style.left = rect.left + 'px';
+      dropdown.style.width = '560px';
+    }
   }
 
   input.addEventListener('focus', () => {
