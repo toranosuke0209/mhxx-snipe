@@ -136,16 +136,7 @@
 
     .empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
     .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
-    .error-msg {
-      background: rgba(233,69,96,0.15); border: 1px solid var(--accent); border-radius: 8px;
-      padding: 12px 16px; color: var(--accent); font-size: 0.85rem; margin-bottom: 16px;
-    }
-    .spinner {
-      display: none; width: 20px; height: 20px; border: 2px solid var(--border);
-      border-top-color: var(--accent); border-radius: 50%;
-      animation: spin 0.7s linear infinite; margin: 0 auto;
-    }
-    .spinner.show { display: block; }
+    /* .error-msg defined in UX improvements section below */
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .seed-hint { font-size: 0.72rem; color: var(--text2); margin-top: 4px; }
@@ -229,7 +220,7 @@
     .metro-panel {
       background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
       padding: 20px 32px; display: flex; flex-direction: column; align-items: center;
-      gap: 14px; width: 100%; max-width: 400px;
+      gap: 14px; width: 100%; max-width: 700px;
     }
     .metro-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; color: var(--text2); text-transform: uppercase; }
     .beat-dots { display: flex; gap: 8px; }
@@ -326,6 +317,56 @@
     .skill-combo-option.special { color: var(--yellow); }
     .skill-combo-option mark { background: transparent; color: var(--accent); font-weight: 700; }
     .skill-combo-empty { padding: 10px 12px; font-size: 0.82rem; color: var(--text2); }
+
+    /* ── UX improvements ── */
+    @keyframes flash { 0%,100%{background:var(--bg)} 50%{background:rgba(102,187,106,0.3)} }
+    body.flash { animation: flash 0.4s ease; }
+
+    .workflow-steps {
+      display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: center;
+      width: 100%; max-width: 700px;
+    }
+    .wf-step {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 12px; font-size: 0.78rem; line-height: 1.5;
+    }
+    .wf-num {
+      font-size: 1.1rem; font-weight: 700; color: var(--accent); min-width: 20px;
+    }
+    .wf-arrow { color: var(--text2); font-size: 0.9rem; }
+
+    .spinner {
+      display: none; align-items: center; gap: 8px; justify-content: center;
+      padding: 8px; font-size: 0.82rem; color: var(--text2);
+    }
+    .spinner.show { display: flex; }
+    .spinner::before {
+      content: ''; width: 16px; height: 16px; border: 2px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.7s linear infinite; flex-shrink: 0;
+    }
+
+    button:active, .btn:active, .ctrl-btn:active, .search-btn:active {
+      transform: scale(0.97);
+      transition: transform 0.05s;
+    }
+
+    .error-msg {
+      background: rgba(233,69,96,0.25); border: 1px solid var(--accent); border-radius: 8px;
+      padding: 12px 16px; color: #ff8fa0; font-size: 0.85rem; margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    @media (max-width: 700px) {
+      .workflow-steps { gap: 6px; }
+      .wf-step { font-size: 0.72rem; padding: 6px 10px; }
+      .wf-arrow { display: none; }
+      .results-table td[data-label]::before {
+        content: attr(data-label) ': ';
+        font-size: 0.7rem; color: var(--text2); font-weight: 600;
+      }
+    }
   </style>
 </head>
 <body>
@@ -400,7 +441,7 @@
     </div>
 
     <button class="search-btn" id="search-btn" onclick="doSearch()">🔍 検索</button>
-    <div class="spinner" id="spinner"></div>
+    <div class="spinner" id="spinner">検索中...</div>
 
   </aside>
 
@@ -458,8 +499,14 @@
   </div>
 
   <!-- Timer buttons -->
-  <div style="font-size:0.72rem;color:var(--text2);margin-bottom:6px;text-align:center">
-    ① 調合開始と同時に ▶ スタート　② 調合完了 → ホームボタンで停止　③ 調合検索でフレーム特定 → セット　④ ゲームと同時に ▶ スタート
+  <div class="workflow-steps">
+    <div class="wf-step"><span class="wf-num">①</span><span class="wf-text">調合開始と同時に<br><b>▶ スタート</b></span></div>
+    <div class="wf-arrow">→</div>
+    <div class="wf-step"><span class="wf-num">②</span><span class="wf-text">調合完了後<br><b>⏸ 停止</b></span></div>
+    <div class="wf-arrow">→</div>
+    <div class="wf-step"><span class="wf-num">③</span><span class="wf-text">調合検索で<br><b>現在F セット</b></span></div>
+    <div class="wf-arrow">→</div>
+    <div class="wf-step"><span class="wf-num">④</span><span class="wf-text">ゲームと同時に<br><b>▶ スタート</b></span></div>
   </div>
   <div class="timer-controls">
     <button class="ctrl-btn start" id="sn-timer-btn" onclick="snTimerToggle()">▶ スタート</button>
@@ -471,7 +518,7 @@
     <span style="font-size:0.78rem;color:var(--text2);white-space:nowrap">③ 現在F</span>
     <input type="number" id="sn-current-input" min="0" value="0"
       style="width:110px;padding:5px 8px;font-size:0.85rem;font-family:monospace"
-      placeholder="0">
+      placeholder="0" onfocus="this.select()">
     <button onclick="snSetCurrentFrame()"
       style="background:var(--surface2);border:1px solid var(--border);color:var(--text);
              border-radius:6px;padding:5px 14px;font-size:0.82rem;cursor:pointer;white-space:nowrap">
@@ -518,9 +565,9 @@
   <!-- ── ずれ確認 ── -->
   <div class="metro-panel" style="margin-top:16px;width:100%;max-width:700px">
     <div class="metro-title" style="cursor:pointer;user-select:none" onclick="toggleOffsetPanel()">
-      実際に出たお守りを入力してずれを確認 <span id="offset-toggle-icon">▼</span>
+      実際に出たお守りを入力してずれを確認 <span id="offset-toggle-icon">▶</span>
     </div>
-    <div id="sn-offset-panel">
+    <div id="sn-offset-panel" style="display:none">
       <div class="combo-hint" style="margin-bottom:10px">
         スナイプ後に実際に入手したお守りを入力すると、目標フレームとのずれを表示します。
       </div>
@@ -544,7 +591,7 @@
         <button class="btn" onclick="setResultSlot(3)">3</button>
       </div>
       <button class="search-btn" id="offset-search-btn" onclick="doOffsetSearch()" style="margin-top:8px">🔍 ずれを確認</button>
-      <div class="spinner" id="offset-spinner"></div>
+      <div class="spinner" id="offset-spinner">検索中...</div>
       <div id="offset-result" style="margin-top:12px"></div>
     </div>
   </div>
@@ -586,7 +633,7 @@
             style="margin-top:6px;background:var(--accent);color:#fff;border:none;
                    border-radius:6px;padding:5px 14px;font-size:0.82rem;cursor:pointer"
             id="video-analyze-btn" disabled>解析して自動入力</button>
-          <div class="spinner" id="video-spinner"></div>
+          <div class="spinner" id="video-spinner">解析中...</div>
         </div>
         <div id="video-error" style="font-size:0.78rem;color:#f87;margin-top:4px"></div>
       </div>
@@ -609,7 +656,7 @@
       </div>
 
       <button class="search-btn" id="sn-combo-search-btn" onclick="doComboSearch()" style="margin-top:8px">🔍 検索</button>
-      <div class="spinner" id="sn-combo-spinner"></div>
+      <div class="spinner" id="sn-combo-spinner">検索中...</div>
 
       <div id="sn-combo-error"></div>
       <div id="sn-combo-results-area" style="margin-top:8px"></div>
@@ -875,12 +922,12 @@ function renderResults(data) {
       ? `<span class="skill-name">${c.skill2}</span> <span class="sp">${fmtSp(c.sp2)}</span>`
       : '<span style="color:#555">—</span>';
     return `<tr class="snipe-row" onclick="showSnipe(${idx})" title="クリックでスナイプ画面へ">
-      <td class="frame-cell">${r.frame.toLocaleString()}</td>
-      <td class="time-cell">${r.time}</td>
-      <td><span class="skill-name">${c.skill1}</span> <span class="sp">${fmtSp(c.sp1)}</span></td>
-      <td>${sk2cell}</td>
-      <td class="slot">${'◆'.repeat(c.slots)}${'◇'.repeat(3-c.slots)}</td>
-      <td><span class="rare-badge" style="color:${rareColor}">R${c.rare}</span></td>
+      <td class="frame-cell" data-label="フレーム">${r.frame.toLocaleString()}</td>
+      <td class="time-cell" data-label="時間">${r.time}</td>
+      <td data-label="スキル1"><span class="skill-name">${c.skill1}</span> <span class="sp">${fmtSp(c.sp1)}</span></td>
+      <td data-label="スキル2">${sk2cell}</td>
+      <td class="slot" data-label="スロット">${'◆'.repeat(c.slots)}${'◇'.repeat(3-c.slots)}</td>
+      <td data-label="レア"><span class="rare-badge" style="color:${rareColor}">R${c.rare}</span></td>
       <td class="snipe-hint">▶ スナイプ</td>
     </tr>`;
   }).join('');
