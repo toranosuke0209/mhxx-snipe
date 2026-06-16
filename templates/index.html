@@ -807,13 +807,16 @@ function buildCombo(containerId, options) {
     }
   }
 
-  input.addEventListener('focus', () => {
+  function openDropdown() {
     if (blurTimer) { clearTimeout(blurTimer); blurTimer = null; }
     input.readOnly = false;
     input.select();
     positionDropdown();
     renderDropdown('');
-  });
+  }
+
+  input.addEventListener('focus', openDropdown);
+  input.addEventListener('click', openDropdown);
   input.addEventListener('input', () => renderDropdown(input.value));
   input.addEventListener('blur', () => {
     blurTimer = setTimeout(() => {
