@@ -797,7 +797,9 @@ function buildCombo(containerId, options) {
     const rect = input.getBoundingClientRect();
     const isMobile = window.innerWidth <= 700;
     if (isMobile) {
-      dropdown.style.top  = (rect.bottom + 3) + 'px';
+      const vv = window.visualViewport;
+      const vtop = vv ? vv.offsetTop : 0;
+      dropdown.style.top  = (rect.bottom + vtop + 3) + 'px';
       dropdown.style.left = '14px';
       dropdown.style.width = (window.innerWidth - 28) + 'px';
     } else {
@@ -816,7 +818,7 @@ function buildCombo(containerId, options) {
       setTimeout(() => {
         positionDropdown();
         renderDropdown('');
-      }, 100);
+      }, 300);
     } else {
       positionDropdown();
       renderDropdown('');
