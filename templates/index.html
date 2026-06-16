@@ -810,16 +810,21 @@ function buildCombo(containerId, options) {
 
   function openDropdown() {
     if (blurTimer) { clearTimeout(blurTimer); blurTimer = null; }
+    suppressScroll = true;
     input.readOnly = false;
     input.select();
     positionDropdown();
     renderDropdown('');
     if (window.innerWidth <= 700) {
-      suppressScroll = true;
       setTimeout(() => {
         input.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        setTimeout(() => { suppressScroll = false; }, 600);
+        setTimeout(() => {
+          positionDropdown();
+          suppressScroll = false;
+        }, 600);
       }, 50);
+    } else {
+      suppressScroll = false;
     }
   }
 
@@ -848,6 +853,10 @@ function buildCombo(containerId, options) {
       input.blur();
     }
   }
+  if (container._scrollHandler) {
+    window.removeEventListener('scroll', container._scrollHandler, { capture: true });
+  }
+  container._scrollHandler = closeOnScroll;
   window.addEventListener('scroll', closeOnScroll, { passive: true, capture: true });
   input.addEventListener('keydown', e => {
     const items = dropdown.querySelectorAll('.skill-combo-option');
