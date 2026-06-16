@@ -813,6 +813,11 @@ function buildCombo(containerId, options) {
     input.select();
     positionDropdown();
     renderDropdown('');
+    if (window.innerWidth <= 700) {
+      setTimeout(() => {
+        input.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    }
   }
 
   input.addEventListener('focus', openDropdown);
