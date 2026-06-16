@@ -828,6 +828,17 @@ function buildCombo(containerId, options) {
       input.readOnly = true;
     }, 150);
   });
+
+  function closeOnScroll() {
+    if (dropdown.classList.contains('open')) {
+      dropdown.classList.remove('open');
+      const cur = skillCombos[containerId].selected;
+      if (cur) input.value = cur.label;
+      input.readOnly = true;
+      input.blur();
+    }
+  }
+  window.addEventListener('scroll', closeOnScroll, { passive: true, capture: true });
   input.addEventListener('keydown', e => {
     const items = dropdown.querySelectorAll('.skill-combo-option');
     if (e.key === 'ArrowDown') {
