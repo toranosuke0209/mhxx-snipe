@@ -728,6 +728,7 @@ function buildCombo(containerId, options) {
   const input = container.querySelector('.skill-combo-input');
   let focusedIdx = -1;
   let blurTimer = null;
+  let suppressScroll = false;
 
   skillCombos[containerId] = { el: container, options, selected: null };
 
@@ -814,8 +815,10 @@ function buildCombo(containerId, options) {
     positionDropdown();
     renderDropdown('');
     if (window.innerWidth <= 700) {
+      suppressScroll = true;
       setTimeout(() => {
         input.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => { suppressScroll = false; }, 600);
       }, 50);
     }
   }
@@ -835,6 +838,7 @@ function buildCombo(containerId, options) {
   });
 
   function closeOnScroll(e) {
+    if (suppressScroll) return;
     if (dropdown.contains(e.target)) return;
     if (dropdown.classList.contains('open')) {
       dropdown.classList.remove('open');
