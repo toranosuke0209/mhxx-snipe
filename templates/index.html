@@ -550,7 +550,7 @@
     <div style="flex:1">
       <div style="font-size:0.72rem;color:var(--text2);margin-bottom:2px">コンテニュー連打</div>
       <div style="font-family:monospace;font-size:1.5rem;font-weight:700;color:var(--accent)" id="sn-continue-count">— 回</div>
-      <div style="font-size:0.72rem;color:var(--text2);margin-top:4px">1回押し後 → <span id="sn-after-first" style="color:var(--blue);font-family:monospace">—</span></div>
+      <div style="font-size:0.72rem;color:var(--text2);margin-top:4px">1回押し後の残り待ち: <span id="sn-after-first" style="color:var(--blue);font-family:monospace">—</span></div>
     </div>
     <div style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text2)">
       <span>1回≒</span>
@@ -1186,8 +1186,10 @@ function snUpdateContinueCount() {
   const count = Math.max(0, Math.floor((remain - buffer) / fpc));
   el.textContent = `約 ${count.toLocaleString()} 回`;
   if (afterEl) {
-    const afterFrame = snFrame + fpc;
-    afterEl.textContent = `${afterFrame.toLocaleString()} F (${frameToTime(afterFrame)})`;
+    const remainAfter = snTarget - snFrame - fpc;
+    afterEl.textContent = remainAfter > 0
+      ? `${remainAfter.toLocaleString()} F (${frameToTime(remainAfter)})`
+      : '—';
   }
 }
 
