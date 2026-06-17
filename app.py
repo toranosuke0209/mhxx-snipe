@@ -15,6 +15,19 @@ def get_db():
     con.execute('''CREATE TABLE IF NOT EXISTS favs (
         key TEXT PRIMARY KEY,
         result_json TEXT NOT NULL,
+        username TEXT NOT NULL DEFAULT 'admin',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )''')
+    try:
+        con.execute("ALTER TABLE favs ADD COLUMN username TEXT NOT NULL DEFAULT 'admin'")
+    except Exception:
+        pass
+    con.execute('''CREATE TABLE IF NOT EXISTS offset_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+        target_frame INTEGER NOT NULL,
+        actual_frame INTEGER NOT NULL,
+        diff INTEGER NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
     con.commit()
@@ -203,8 +216,11 @@ def video_analyze_route():
 
 @app.route('/api/favs', methods=['GET'])
 def favs_list():
+    username = request.args.get('username', '')
+    if not username:
+        return jsonify({'error': 'username required'}), 400
     con = get_db()
-    rows = con.execute('SELECT key, result_json FROM favs ORDER BY created_at DESC').fetchall()
+    rows = con.execute('SELECT key, result_json FROM favs WHERE username = ? ORDER BY created_at DESC', (username,)).fetchall()
     con.close()
     return jsonify({'favs': [{'key': r['key'], 'result': __import__('json').loads(r['result_json'])} for r in rows]})
 
@@ -215,12 +231,13 @@ def favs_upsert():
     data = request.json
     key = data.get('key')
     result = data.get('result')
+    username = data.get('username', 'admin')
     if not key or result is None:
         return jsonify({'error': 'key and result required'}), 400
     con = get_db()
     con.execute(
-        'INSERT INTO favs (key, result_json) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET result_json=excluded.result_json',
-        (key, json.dumps(result))
+        'INSERT INTO favs (key, result_json, username) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET result_json=excluded.result_json, username=excluded.username',
+        (key, json.dumps(result), username)
     )
     con.commit()
     con.close()
@@ -229,8 +246,9 @@ def favs_upsert():
 
 @app.route('/api/favs/<path:key>', methods=['DELETE'])
 def favs_delete(key):
+    username = request.args.get('username') or (request.json or {}).get('username', 'admin')
     con = get_db()
-    con.execute('DELETE FROM favs WHERE key = ?', (key,))
+    con.execute('DELETE FROM favs WHERE key = ? AND username = ?', (key, username))
     con.commit()
     con.close()
     return jsonify({'ok': True})
@@ -238,11 +256,47 @@ def favs_delete(key):
 
 @app.route('/api/favs', methods=['DELETE'])
 def favs_clear():
+    username = request.args.get('username') or (request.json or {}).get('username', 'admin')
     con = get_db()
-    con.execute('DELETE FROM favs')
+    con.execute('DELETE FROM favs WHERE username = ?', (username,))
     con.commit()
     con.close()
     return jsonify({'ok': True})
+
+
+@app.route('/api/offset_history', methods=['POST'])
+def offset_history_post():
+    data = request.json
+    username = data.get('username', 'admin')
+    target_frame = data.get('target_frame')
+    actual_frame = data.get('actual_frame')
+    if target_frame is None or actual_frame is None:
+        return jsonify({'error': 'target_frame and actual_frame required'}), 400
+    diff = int(actual_frame) - int(target_frame)
+    con = get_db()
+    con.execute(
+        'INSERT INTO offset_history (username, target_frame, actual_frame, diff) VALUES (?, ?, ?, ?)',
+        (username, int(target_frame), int(actual_frame), diff)
+    )
+    con.commit()
+    con.close()
+    return jsonify({'ok': True})
+
+
+@app.route('/api/offset_history', methods=['GET'])
+def offset_history_get():
+    username = request.args.get('username', '')
+    if not username:
+        return jsonify({'error': 'username required'}), 400
+    con = get_db()
+    rows = con.execute(
+        'SELECT target_frame, actual_frame, diff, created_at FROM offset_history WHERE username = ? ORDER BY created_at DESC LIMIT 20',
+        (username,)
+    ).fetchall()
+    records = [{'target_frame': r['target_frame'], 'actual_frame': r['actual_frame'], 'diff': r['diff'], 'created_at': r['created_at']} for r in rows]
+    avg_diff = (sum(r['diff'] for r in records) / len(records)) if records else None
+    con.close()
+    return jsonify({'records': records, 'avg_diff': avg_diff})
 
 
 if __name__ == '__main__':

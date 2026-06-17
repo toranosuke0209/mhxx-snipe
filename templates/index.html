@@ -379,16 +379,44 @@
         font-size: 0.7rem; color: var(--text2); font-weight: 600;
       }
     }
+
+    /* ── Account modal ── */
+    .account-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000; display:flex; align-items:center; justify-content:center; }
+    .account-modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:32px; min-width:280px; text-align:center; }
+    .account-modal h2 { margin-bottom:16px; }
+    .account-modal input { width:100%; margin-bottom:16px; }
+    .account-modal button { width:100%; }
+
+    /* ── User chip in header ── */
+    .user-chip { font-size:0.8rem; color:var(--text2); display:flex; align-items:center; gap:6px; }
+    .user-chip strong { color:var(--text); }
+    .user-chip a { color:var(--accent); text-decoration:none; font-size:0.75rem; cursor:pointer; }
+    .user-chip a:hover { text-decoration:underline; }
   </style>
 </head>
 <body>
+
+<!-- Account modal -->
+<div class="account-modal-overlay" id="account-modal" style="display:none">
+  <div class="account-modal">
+    <h2>ユーザー名を入力</h2>
+    <input type="text" id="account-name-input" placeholder="名前を入力..." maxlength="32" onkeydown="if(event.key==='Enter')confirmUsername()">
+    <button class="search-btn" style="margin-top:0" onclick="confirmUsername()">決定</button>
+  </div>
+</div>
 
 <header>
   <div>
     <h1>⚔️ MHXX お守りスナイプ</h1>
     <div class="subtitle">Monster Hunter XX Charm RNG Tool</div>
   </div>
-  <button class="back-btn" id="back-btn" onclick="showSearch()" style="display:none">← 検索に戻る</button>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div class="user-chip" id="user-chip">
+      <strong id="user-display"></strong>
+      <a onclick="changeUsername()">変更</a>
+    </div>
+    <button class="back-btn" id="back-btn" onclick="showSearch()" style="display:none">← 検索に戻る</button>
+  </div>
 </header>
 
 <!-- ══════════ SCREEN: Search ══════════ -->
@@ -626,6 +654,12 @@
       <button class="search-btn" id="offset-search-btn" onclick="doOffsetSearch()" style="margin-top:8px">🔍 ずれを確認</button>
       <div class="spinner" id="offset-spinner">検索中...</div>
       <div id="offset-result" style="margin-top:12px"></div>
+
+      <!-- Offset history panel -->
+      <div id="offset-history-panel" style="margin-top:16px;display:none">
+        <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;color:var(--text2);text-transform:uppercase;margin-bottom:8px">直近のずれ履歴</div>
+        <div id="offset-history-list"></div>
+      </div>
     </div>
   </div>
 
@@ -993,14 +1027,15 @@ async function toggleFav(idx, btn) {
   const r = searchResults[idx];
   if (!r) return;
   const key = favCharmKey(r);
+  const username = getUsername();
   if (_favKeySet.has(key)) {
-    await fetch(`/api/favs/${encodeURIComponent(key)}`, { method: 'DELETE' });
+    await fetch(`/api/favs/${encodeURIComponent(key)}?username=${encodeURIComponent(username)}`, { method: 'DELETE' });
     btn.textContent = '☆'; btn.classList.remove('active');
   } else {
     await fetch('/api/favs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, result: r }),
+      body: JSON.stringify({ key, result: r, username }),
     });
     btn.textContent = '★'; btn.classList.add('active');
   }
@@ -1009,7 +1044,8 @@ async function toggleFav(idx, btn) {
 
 async function clearFavs() {
   if (!confirm('お気に入りをすべて削除しますか？')) return;
-  await fetch('/api/favs', { method: 'DELETE' });
+  const username = getUsername();
+  await fetch(`/api/favs?username=${encodeURIComponent(username)}`, { method: 'DELETE' });
   await renderFavs();
   document.querySelectorAll('.fav-btn.active').forEach(b => {
     b.textContent = '☆'; b.classList.remove('active');
@@ -1017,7 +1053,8 @@ async function clearFavs() {
 }
 
 async function removeFav(key) {
-  await fetch(`/api/favs/${encodeURIComponent(key)}`, { method: 'DELETE' });
+  const username = getUsername();
+  await fetch(`/api/favs/${encodeURIComponent(key)}?username=${encodeURIComponent(username)}`, { method: 'DELETE' });
   await renderFavs();
   document.querySelectorAll('.fav-btn.active').forEach(b => {
     const idx = parseInt(b.getAttribute('data-idx'));
@@ -1030,7 +1067,8 @@ async function removeFav(key) {
 let favResults = [];
 
 async function renderFavs() {
-  const resp = await fetch('/api/favs');
+  const username = getUsername();
+  const resp = await fetch(`/api/favs?username=${encodeURIComponent(username)}`);
   const data = await resp.json();
   const list = data.favs || [];
   _favKeySet = new Set(list.map(f => f.key));
@@ -1398,8 +1436,39 @@ function metroSyncFromNumber() {
   metroApplyBpm(parseInt(document.getElementById('metro-bpm').value));
 }
 
+// ─── Account system ──────────────────────────────────────
+function getUsername() {
+  return localStorage.getItem('mhxx_username') || 'admin';
+}
+
+function initAccount() {
+  const stored = localStorage.getItem('mhxx_username');
+  if (!stored) {
+    document.getElementById('account-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('account-name-input').focus(), 50);
+  } else {
+    document.getElementById('user-display').textContent = stored;
+  }
+}
+
+function confirmUsername() {
+  const val = document.getElementById('account-name-input').value.trim() || 'admin';
+  localStorage.setItem('mhxx_username', val);
+  document.getElementById('user-display').textContent = val;
+  document.getElementById('account-modal').style.display = 'none';
+  renderFavs();
+  loadOffsetHistory();
+}
+
+function changeUsername() {
+  localStorage.removeItem('mhxx_username');
+  location.reload();
+}
+
 loadSkills();
+initAccount();
 renderFavs();
+loadOffsetHistory();
 
 // ─── Combo snipe (on snipe screen) ───────────────────────
 function toggleComboPanel() {
@@ -1537,6 +1606,11 @@ async function doOffsetSearch() {
         <div style="font-family:monospace;font-size:2rem;font-weight:700;color:${color}">${sign}${diff} F</div>
         <div style="font-size:0.78rem;color:var(--text2);margin-top:6px">${diff > 0 ? '目標より遅かった（押すのが遅い）' : diff < 0 ? '目標より早かった（押すのが早い）' : '✔ ピッタリ！'}</div>
         <div style="font-size:0.75rem;color:var(--text2);margin-top:8px;border-top:1px solid var(--border);padding-top:8px">${c.skill1} ${fmtSp(c.sp1)}${sk2} ${'◆'.repeat(c.slots)}${'◇'.repeat(3-c.slots)}</div>
+        <button onclick="recordOffset(${center}, ${closest.frame})"
+          style="margin-top:10px;background:var(--surface);border:1px solid var(--border);color:var(--text);
+                 border-radius:6px;padding:5px 16px;font-size:0.82rem;cursor:pointer;width:100%">
+          記録する
+        </button>
       </div>`;
   } catch(e) {
     resultEl.innerHTML = `<div class="error-msg">⚠️ ${e.message}</div>`;
@@ -1544,6 +1618,46 @@ async function doOffsetSearch() {
     btn.disabled = false;
     spinner.classList.remove('show');
   }
+}
+
+// ─── Offset history ──────────────────────────────────────
+async function recordOffset(targetFrame, actualFrame) {
+  const username = getUsername();
+  try {
+    await fetch('/api/offset_history', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username, target_frame: targetFrame, actual_frame: actualFrame}),
+    });
+    await loadOffsetHistory();
+  } catch(e) {}
+}
+
+async function loadOffsetHistory() {
+  const username = getUsername();
+  try {
+    const res = await fetch(`/api/offset_history?username=${encodeURIComponent(username)}`);
+    const data = await res.json();
+    const panel = document.getElementById('offset-history-panel');
+    const list  = document.getElementById('offset-history-list');
+    if (!panel || !list) return;
+    const records = data.records || [];
+    if (!records.length) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+    const last5 = records.slice(0, 5);
+    const avgDiff = data.avg_diff !== null ? data.avg_diff.toFixed(1) : '—';
+    const sign = v => v > 0 ? `+${v}` : String(v);
+    const color = v => v === 0 ? 'var(--green)' : Math.abs(v) <= 300 ? 'var(--yellow)' : 'var(--accent)';
+    list.innerHTML = `
+      <div style="margin-bottom:6px;font-size:0.78rem;color:var(--text2)">
+        直近${records.length}回の平均ずれ：<span style="font-family:monospace;font-weight:700;color:${color(parseFloat(avgDiff))}">${avgDiff} F</span>
+      </div>` +
+      last5.map(r => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);font-size:0.78rem">
+          <span style="color:var(--text2);font-family:monospace">${r.target_frame.toLocaleString()} F → ${r.actual_frame.toLocaleString()} F</span>
+          <span style="font-family:monospace;font-weight:700;color:${color(r.diff)}">${sign(r.diff)} F</span>
+        </div>`).join('');
+  } catch(e) {}
 }
 
 // ─── 動画解析（Switch 1080p） ─────────────────────────────
