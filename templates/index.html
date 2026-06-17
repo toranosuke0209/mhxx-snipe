@@ -803,48 +803,94 @@ async function showFavs() {
   await renderFavScreen();
 }
 
+let favSortKey = 'created_at';
+let favSortAsc = false;
+let favListCache = [];
+
 async function renderFavScreen() {
   const username = localStorage.getItem('mhxx_username') || 'admin';
   const area = document.getElementById('fav-screen-area');
   try {
     const res = await fetch(`/api/favs?username=${encodeURIComponent(username)}`);
     const data = await res.json();
-    const list = data.favs || [];
-    if (!list.length) {
-      area.innerHTML = '<div class="empty-state"><div class="icon">★</div><div>お気に入りはありません</div></div>';
-      return;
-    }
-    favResults = list.map(f => f.result);
-    const rows = list.map((f, i) => {
-      const r = f.result; const c = r.charm;
-      const rareColor = RARE_COLORS[c.rare] || '#888';
-      const sk2 = (c.skill2 && c.sp2 !== 0) ? ` / ${c.skill2} ${fmtSp(c.sp2)}` : '';
-      return `<tr class="snipe-row" onclick="showSnipe(favResults[${i}])">
-        <td class="frame-cell" data-label="フレーム">${r.frame.toLocaleString()}</td>
-        <td class="time-cell" data-label="時間">${r.time}</td>
-        <td data-label="スキル">${c.skill1} ${fmtSp(c.sp1)}${sk2}</td>
-        <td class="slot" data-label="スロット">${'◆'.repeat(c.slots)}${'◇'.repeat(3-c.slots)}</td>
-        <td data-label="レア"><span class="rare-badge" style="color:${rareColor}">R${c.rare}</span></td>
-        <td data-label="メモ" style="color:var(--text2);font-size:0.8rem">${f.memo || '—'}</td>
-        <td onclick="event.stopPropagation()">
-          <button class="fav-btn active" onclick="removeFavAndRefresh('${f.key}',this)" title="削除">★</button>
-        </td>
-      </tr>`;
-    }).join('');
-    area.innerHTML = `
-      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-        <button class="ctrl-btn" style="font-size:0.75rem;padding:3px 10px" onclick="clearFavs()">すべて削除</button>
-      </div>
-      <table class="results-table"><tbody>${rows}</tbody></table>`;
+    favListCache = data.favs || [];
+    renderFavTable(area);
   } catch(e) {
     area.innerHTML = '<div class="empty-state"><div>読み込み失敗</div></div>';
+  }
+}
+
+function renderFavTable(area) {
+  const list = [...favListCache];
+  if (!list.length) {
+    area.innerHTML = '<div class="empty-state"><div class="icon">★</div><div>お気に入りはありません</div></div>';
+    return;
+  }
+
+  list.sort((a, b) => {
+    let av, bv;
+    if (favSortKey === 'frame') { av = a.result.frame; bv = b.result.frame; }
+    else if (favSortKey === 'skill') { av = a.result.charm.skill1; bv = b.result.charm.skill1; }
+    else if (favSortKey === 'memo') { av = a.memo || ''; bv = b.memo || ''; }
+    else { av = a.result.frame; bv = b.result.frame; } // created_at: use insertion order (already sorted by server)
+    if (favSortKey === 'created_at') return favSortAsc ? 1 : -1; // server returns DESC, flip for ASC
+    if (av < bv) return favSortAsc ? -1 : 1;
+    if (av > bv) return favSortAsc ? 1 : -1;
+    return 0;
+  });
+
+  favResults = list.map(f => f.result);
+
+  const arrow = favSortAsc ? '↑' : '↓';
+  const sortBtn = (key, label) => {
+    const active = favSortKey === key ? `style="color:var(--accent)"` : '';
+    const a = (favSortKey === key) ? arrow : '';
+    return `<button class="ctrl-btn" style="font-size:0.75rem;padding:3px 10px" ${active} onclick="setFavSort('${key}')">${label}${a}</button>`;
+  };
+
+  const rows = list.map((f, i) => {
+    const r = f.result; const c = r.charm;
+    const rareColor = RARE_COLORS[c.rare] || '#888';
+    const sk2 = (c.skill2 && c.sp2 !== 0) ? ` / ${c.skill2} ${fmtSp(c.sp2)}` : '';
+    return `<tr class="snipe-row" onclick="showSnipe(favResults[${i}])">
+      <td class="frame-cell" data-label="フレーム">${r.frame.toLocaleString()}</td>
+      <td class="time-cell" data-label="時間">${r.time}</td>
+      <td data-label="スキル">${c.skill1} ${fmtSp(c.sp1)}${sk2}</td>
+      <td class="slot" data-label="スロット">${'◆'.repeat(c.slots)}${'◇'.repeat(3-c.slots)}</td>
+      <td data-label="レア"><span class="rare-badge" style="color:${rareColor}">R${c.rare}</span></td>
+      <td data-label="メモ" style="color:var(--text2);font-size:0.8rem">${f.memo || '—'}</td>
+      <td onclick="event.stopPropagation()">
+        <button class="fav-btn active" onclick="removeFavAndRefresh('${f.key}',this)" title="削除">★</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  area.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${sortBtn('created_at','登録順')}
+        ${sortBtn('frame','フレーム')}
+        ${sortBtn('skill','スキル')}
+        ${sortBtn('memo','メモ')}
+      </div>
+      <button class="ctrl-btn" style="font-size:0.75rem;padding:3px 10px" onclick="clearFavs()">すべて削除</button>
+    </div>
+    <table class="results-table"><tbody>${rows}</tbody></table>`;
+}
+
+function setFavSort(key) {
+  if (favSortKey === key) { favSortAsc = !favSortAsc; }
+  else { favSortKey = key; favSortAsc = (key === 'frame'); }
+  renderFavTable(document.getElementById('fav-screen-area'));
+}
   }
 }
 
 
 async function removeFavAndRefresh(key, btn) {
   await removeFav(key);
-  await renderFavScreen();
+  favListCache = favListCache.filter(f => f.key !== key);
+  renderFavTable(document.getElementById('fav-screen-area'));
 }
 
 function showSnipe(result) {
