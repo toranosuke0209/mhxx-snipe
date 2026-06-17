@@ -579,15 +579,23 @@
     </div>
   </div>
 
-  <!-- Trial counter -->
-  <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin:12px 0;padding:12px 20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
-    <span style="font-size:0.78rem;color:var(--text2);white-space:nowrap">試行回数</span>
-    <button onclick="trialCount=Math.max(0,trialCount-1);document.getElementById('sn-trial').textContent=trialCount"
-      style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 14px;font-size:1rem;cursor:pointer">－</button>
-    <span id="sn-trial" style="font-family:monospace;font-size:2rem;font-weight:700;color:var(--accent);min-width:2ch;text-align:center">0</span>
-    <button onclick="trialCount++;document.getElementById('sn-trial').textContent=trialCount"
-      style="background:var(--accent);border:none;color:#fff;border-radius:6px;padding:4px 14px;font-size:1rem;cursor:pointer;font-weight:700">＋</button>
-    <span style="font-size:0.78rem;color:var(--text2)">回</span>
+  <!-- Trial counter + memo -->
+  <div style="margin:12px 0;padding:14px 20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
+    <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px">
+      <span style="font-size:0.78rem;color:var(--text2);white-space:nowrap">試行回数</span>
+      <button onclick="trialCount=Math.max(0,trialCount-1);updateTrialDisplay()"
+        style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 14px;font-size:1rem;cursor:pointer">－</button>
+      <span id="sn-trial" style="font-family:monospace;font-size:2rem;font-weight:700;color:var(--accent);min-width:2ch;text-align:center">0</span>
+      <button onclick="trialCount++;updateTrialDisplay()"
+        style="background:var(--accent);border:none;color:#fff;border-radius:6px;padding:4px 14px;font-size:1rem;cursor:pointer;font-weight:700">＋</button>
+      <span style="font-size:0.78rem;color:var(--text2)">回</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="text" id="sn-memo" placeholder="メモ（例: 3回で成功）"
+        style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:0.85rem">
+      <button onclick="saveFavFromSnipe()"
+        style="background:var(--surface2);border:1px solid var(--border);color:#f5c518;border-radius:6px;padding:7px 14px;font-size:0.9rem;cursor:pointer;white-space:nowrap;font-weight:700">★ 保存</button>
+    </div>
   </div>
 
   <!-- Timer buttons -->
@@ -817,6 +825,7 @@ async function renderFavScreen() {
         <td data-label="スキル">${c.skill1} ${fmtSp(c.sp1)}${sk2}</td>
         <td class="slot" data-label="スロット">${'◆'.repeat(c.slots)}${'◇'.repeat(3-c.slots)}</td>
         <td data-label="レア"><span class="rare-badge" style="color:${rareColor}">R${c.rare}</span></td>
+        <td data-label="メモ" style="color:var(--text2);font-size:0.8rem">${f.memo || '—'}</td>
         <td onclick="event.stopPropagation()">
           <button class="fav-btn active" onclick="removeFavAndRefresh('${f.key}',this)" title="削除">★</button>
         </td>
@@ -850,10 +859,12 @@ function showSnipe(result) {
   const rareColor = RARE_COLORS[c.rare] || '#888';
   document.getElementById('sn-rare').innerHTML = `<span style="color:${rareColor};font-weight:700">RARE${c.rare}</span>`;
 
+  snCurrentResult = result;
   snTarget = result.frame;
   snTimerReset();
   trialCount = 0;
   document.getElementById('sn-trial').textContent = 0;
+  document.getElementById('sn-memo').value = '';
 
   document.getElementById('screen-search').classList.remove('active');
   document.getElementById('screen-favs').classList.remove('active');
@@ -1291,6 +1302,32 @@ let snTarget = 0;
 let snFrame  = 0;
 let snRunning = false;
 let trialCount = 0;
+let snCurrentResult = null;
+
+function updateTrialDisplay() {
+  document.getElementById('sn-trial').textContent = trialCount;
+  const memo = document.getElementById('sn-memo');
+  if (memo) memo.value = trialCount > 0 ? `${trialCount}回で成功` : '';
+}
+
+async function saveFavFromSnipe() {
+  if (!snCurrentResult) return;
+  const username = getUsername();
+  const key = favCharmKey(snCurrentResult);
+  const memo = document.getElementById('sn-memo').value.trim();
+  await fetch('/api/favs', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ key, result: snCurrentResult, username, memo })
+  });
+  await renderFavs();
+  // Flash button
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.textContent = '✔ 保存済';
+  btn.style.color = 'var(--green)';
+  setTimeout(() => { btn.textContent = orig; btn.style.color = '#f5c518'; }, 1500);
+}
 let snInterval = null;
 
 function frameToTime(fr) {

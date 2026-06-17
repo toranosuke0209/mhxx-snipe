@@ -16,12 +16,14 @@ def get_db():
         key TEXT PRIMARY KEY,
         result_json TEXT NOT NULL,
         username TEXT NOT NULL DEFAULT 'admin',
+        memo TEXT NOT NULL DEFAULT '',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
-    try:
-        con.execute("ALTER TABLE favs ADD COLUMN username TEXT NOT NULL DEFAULT 'admin'")
-    except Exception:
-        pass
+    for col, definition in [("username", "TEXT NOT NULL DEFAULT 'admin'"), ("memo", "TEXT NOT NULL DEFAULT ''")]:
+        try:
+            con.execute(f"ALTER TABLE favs ADD COLUMN {col} {definition}")
+        except Exception:
+            pass
     con.execute('''CREATE TABLE IF NOT EXISTS offset_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,
@@ -220,9 +222,9 @@ def favs_list():
     if not username:
         return jsonify({'error': 'username required'}), 400
     con = get_db()
-    rows = con.execute('SELECT key, result_json FROM favs WHERE username = ? ORDER BY created_at DESC', (username,)).fetchall()
+    rows = con.execute('SELECT key, result_json, memo FROM favs WHERE username = ? ORDER BY created_at DESC', (username,)).fetchall()
     con.close()
-    return jsonify({'favs': [{'key': r['key'], 'result': __import__('json').loads(r['result_json'])} for r in rows]})
+    return jsonify({'favs': [{'key': r['key'], 'result': __import__('json').loads(r['result_json']), 'memo': r['memo'] or ''} for r in rows]})
 
 
 @app.route('/api/favs', methods=['POST'])
@@ -232,12 +234,13 @@ def favs_upsert():
     key = data.get('key')
     result = data.get('result')
     username = data.get('username', 'admin')
+    memo = data.get('memo', '')
     if not key or result is None:
         return jsonify({'error': 'key and result required'}), 400
     con = get_db()
     con.execute(
-        'INSERT INTO favs (key, result_json, username) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET result_json=excluded.result_json, username=excluded.username',
-        (key, json.dumps(result), username)
+        'INSERT INTO favs (key, result_json, username, memo) VALUES (?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET result_json=excluded.result_json, username=excluded.username, memo=excluded.memo',
+        (key, json.dumps(result), username, memo)
     )
     con.commit()
     con.close()
