@@ -392,6 +392,21 @@
     .user-chip strong { color:var(--text); }
     .user-chip a { color:var(--accent); text-decoration:none; font-size:0.75rem; cursor:pointer; }
     .user-chip a:hover { text-decoration:underline; }
+
+    /* ── Nav tabs ── */
+    .nav-tabs { display:flex; gap:4px; }
+    .nav-tab {
+      background: none; border: none; color: var(--text2); font-size: 0.85rem;
+      padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all 0.15s;
+    }
+    .nav-tab:hover { background: var(--surface2); color: var(--text); }
+    .nav-tab.active { background: var(--accent); color: #fff; font-weight: 700; }
+    @media (max-width: 700px) { .nav-tab { padding: 6px 10px; font-size: 0.78rem; } }
+
+    /* ── Favorites screen ── */
+    .fav-screen { padding: 24px; max-width: 900px; margin: 0 auto; }
+    .fav-screen-header { margin-bottom: 20px; }
+    .fav-screen-header h2 { font-size: 1.2rem; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -410,12 +425,15 @@
     <h1>⚔️ MHXX お守りスナイプ</h1>
     <div class="subtitle">Monster Hunter XX Charm RNG Tool</div>
   </div>
-  <div style="display:flex;align-items:center;gap:16px">
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <nav class="nav-tabs">
+      <button class="nav-tab active" id="nav-search" onclick="showSearch()">🔍 検索</button>
+      <button class="nav-tab" id="nav-favs" onclick="showFavs()">★ お気に入り</button>
+    </nav>
     <div class="user-chip" id="user-chip">
       <strong id="user-display"></strong>
       <a onclick="changeUsername()">変更</a>
     </div>
-    <button class="back-btn" id="back-btn" onclick="showSearch()" style="display:none">← 検索に戻る</button>
   </div>
 </header>
 
@@ -488,15 +506,6 @@
   <main class="main">
     <div id="error-area"></div>
 
-    <!-- Favorites -->
-    <div class="fav-panel" id="fav-panel" style="display:none">
-      <div class="fav-panel-header">
-        <h2>★ お気に入り</h2>
-        <button class="ctrl-btn" style="font-size:0.75rem;padding:3px 10px" onclick="clearFavs()">すべて削除</button>
-      </div>
-      <div id="fav-area"><div class="fav-empty">お気に入りはありません</div></div>
-    </div>
-
     <!-- Charm results -->
     <div id="charm-results-panel">
       <div class="results-header">
@@ -514,6 +523,18 @@
   </main>
 </div>
 </div><!-- /screen-search -->
+
+<!-- ══════════ SCREEN: Favorites ══════════ -->
+<div class="screen" id="screen-favs">
+  <div class="fav-screen">
+    <div class="fav-screen-header">
+      <h2>★ お気に入り</h2>
+    </div>
+    <div id="fav-screen-area">
+      <div class="empty-state"><div class="icon">★</div><div>お気に入りはありません</div></div>
+    </div>
+  </div>
+</div><!-- /screen-favs -->
 
 <!-- ══════════ SCREEN: Snipe ══════════ -->
 <div class="screen" id="screen-snipe">
@@ -735,12 +756,72 @@
 
 <script>
 // ─── Screen navigation ────────────────────────────────────
+function setActiveNav(id) {
+  ['nav-search','nav-favs'].forEach(n => {
+    const el = document.getElementById(n);
+    if (el) el.classList.toggle('active', n === id);
+  });
+}
+
 function showSearch() {
   document.getElementById('screen-search').classList.add('active');
   document.getElementById('screen-snipe').classList.remove('active');
-  document.getElementById('back-btn').style.display = 'none';
+  document.getElementById('screen-favs').classList.remove('active');
+  setActiveNav('nav-search');
   snTimerStop();
   metroStop();
+}
+
+async function showFavs() {
+  document.getElementById('screen-search').classList.remove('active');
+  document.getElementById('screen-snipe').classList.remove('active');
+  document.getElementById('screen-favs').classList.add('active');
+  setActiveNav('nav-favs');
+  snTimerStop();
+  metroStop();
+  await renderFavScreen();
+}
+
+async function renderFavScreen() {
+  const username = localStorage.getItem('mhxx_username') || 'admin';
+  const area = document.getElementById('fav-screen-area');
+  try {
+    const res = await fetch(`/api/favs?username=${encodeURIComponent(username)}`);
+    const data = await res.json();
+    const list = data.favs || [];
+    if (!list.length) {
+      area.innerHTML = '<div class="empty-state"><div class="icon">★</div><div>お気に入りはありません</div></div>';
+      return;
+    }
+    favResults = list.map(f => f.result);
+    const rows = list.map((f, i) => {
+      const r = f.result; const c = r.charm;
+      const rareColor = RARE_COLORS[c.rare] || '#888';
+      const sk2 = (c.skill2 && c.sp2 !== 0) ? ` / ${c.skill2} ${fmtSp(c.sp2)}` : '';
+      return `<tr class="snipe-row" onclick="showSnipe(favResults[${i}])">
+        <td class="frame-cell" data-label="フレーム">${r.frame.toLocaleString()}</td>
+        <td class="time-cell" data-label="時間">${r.time}</td>
+        <td data-label="スキル">${c.skill1} ${fmtSp(c.sp1)}${sk2}</td>
+        <td class="slot" data-label="スロット">${'◆'.repeat(c.slots)}${'◇'.repeat(3-c.slots)}</td>
+        <td data-label="レア"><span class="rare-badge" style="color:${rareColor}">R${c.rare}</span></td>
+        <td onclick="event.stopPropagation()">
+          <button class="fav-btn active" onclick="removeFavAndRefresh('${f.key}',this)" title="削除">★</button>
+        </td>
+      </tr>`;
+    }).join('');
+    area.innerHTML = `
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+        <button class="ctrl-btn" style="font-size:0.75rem;padding:3px 10px" onclick="clearFavs()">すべて削除</button>
+      </div>
+      <table class="results-table"><tbody>${rows}</tbody></table>`;
+  } catch(e) {
+    area.innerHTML = '<div class="empty-state"><div>読み込み失敗</div></div>';
+  }
+}
+
+async function removeFavAndRefresh(key, btn) {
+  await removeFav(key);
+  await renderFavScreen();
 }
 
 function showSnipe(result) {
@@ -760,8 +841,9 @@ function showSnipe(result) {
   snTimerReset();
 
   document.getElementById('screen-search').classList.remove('active');
+  document.getElementById('screen-favs').classList.remove('active');
   document.getElementById('screen-snipe').classList.add('active');
-  document.getElementById('back-btn').style.display = '';
+  setActiveNav('');
 }
 
 // ─── Search ───────────────────────────────────────────────
@@ -1072,28 +1154,6 @@ async function renderFavs() {
   const data = await resp.json();
   const list = data.favs || [];
   _favKeySet = new Set(list.map(f => f.key));
-  const panel = document.getElementById('fav-panel');
-  const area  = document.getElementById('fav-area');
-  if (!list.length) {
-    panel.style.display = 'none';
-    return;
-  }
-  panel.style.display = '';
-  favResults = list.map(f => f.result);
-  const rows = list.map((f, i) => {
-    const r = f.result; const c = r.charm;
-    const rareColor = RARE_COLORS[c.rare] || '#888';
-    const sk2 = (c.skill2 && c.sp2 !== 0) ? ` / ${c.skill2} ${fmtSp(c.sp2)}` : '';
-    return `<tr class="snipe-row" onclick="showSnipe(favResults[${i}])">
-      <td class="frame-cell" data-label="フレーム">${r.frame.toLocaleString()}</td>
-      <td class="time-cell" data-label="時間">${r.time}</td>
-      <td data-label="スキル">${c.skill1} ${fmtSp(c.sp1)}${sk2}</td>
-      <td class="slot" data-label="スロット">${'◆'.repeat(c.slots)}${'◇'.repeat(3-c.slots)}</td>
-      <td data-label="レア"><span class="rare-badge" style="color:${rareColor}">R${c.rare}</span></td>
-      <td onclick="event.stopPropagation()"><button class="fav-btn active" onclick="removeFav('${f.key}')" title="削除">★</button></td>
-    </tr>`;
-  }).join('');
-  area.innerHTML = `<table class="results-table"><tbody>${rows}</tbody></table>`;
 }
 // ───────────────────────────────────────────────
 
@@ -1203,7 +1263,9 @@ window.showSnipe = function(idxOrObj) {
   snTimerReset();
 
   document.getElementById('screen-search').classList.remove('active');
+  document.getElementById('screen-favs').classList.remove('active');
   document.getElementById('screen-snipe').classList.add('active');
+  setActiveNav('');
   document.getElementById('back-btn').style.display = '';
 }
 
