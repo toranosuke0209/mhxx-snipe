@@ -826,8 +826,7 @@ async function renderFavScreen() {
         <td class="slot" data-label="スロット">${'◆'.repeat(c.slots)}${'◇'.repeat(3-c.slots)}</td>
         <td data-label="レア"><span class="rare-badge" style="color:${rareColor}">R${c.rare}</span></td>
         <td data-label="メモ" style="color:var(--text2);font-size:0.8rem">${f.memo || '—'}</td>
-        <td onclick="event.stopPropagation()" style="display:flex;gap:6px;align-items:center">
-          <button class="ctrl-btn" style="font-size:0.72rem;padding:3px 8px" onclick="copySimFormat(${i},this)" title="シミュレーターにコピー">📋</button>
+        <td onclick="event.stopPropagation()">
           <button class="fav-btn active" onclick="removeFavAndRefresh('${f.key}',this)" title="削除">★</button>
         </td>
       </tr>`;
@@ -842,32 +841,6 @@ async function renderFavScreen() {
   }
 }
 
-function copySimFormat(i, btn) {
-  const c = favResults[i].charm;
-  const sk1 = c.skill1 || '';
-  const sp1 = c.sp1 || 0;
-  const sk2 = (c.skill2 && c.sp2 && c.sp2 !== 0) ? c.skill2 : '';
-  const sp2 = sk2 ? (c.sp2 || 0) : 0;
-  const slots = c.slots || 0;
-  const text = sk2 ? `,${slots},${sk1},${sp1},${sk2},${sp2}` : `,${slots},${sk1},${sp1}`;
-  const orig = btn.textContent;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => {
-      btn.textContent = '✓';
-      setTimeout(() => btn.textContent = orig, 1500);
-    }).catch(() => prompt('コピーしてください:', text));
-  } else {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    btn.textContent = '✓';
-    setTimeout(() => btn.textContent = orig, 1500);
-  }
-}
 
 async function removeFavAndRefresh(key, btn) {
   await removeFav(key);
