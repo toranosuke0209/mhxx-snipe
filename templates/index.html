@@ -850,13 +850,23 @@ function copySimFormat(i, btn) {
   const sp2 = sk2 ? (c.sp2 || 0) : 0;
   const slots = c.slots || 0;
   const text = sk2 ? `,${slots},${sk1},${sp1},${sk2},${sp2}` : `,${slots},${sk1},${sp1}`;
-  navigator.clipboard.writeText(text).then(() => {
-    const orig = btn.textContent;
+  const orig = btn.textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓';
+      setTimeout(() => btn.textContent = orig, 1500);
+    }).catch(() => prompt('コピーしてください:', text));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
     btn.textContent = '✓';
     setTimeout(() => btn.textContent = orig, 1500);
-  }).catch(() => {
-    prompt('コピーしてください:', text);
-  });
+  }
 }
 
 async function removeFavAndRefresh(key, btn) {
