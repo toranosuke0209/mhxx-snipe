@@ -226,6 +226,8 @@ def getcharm(_origin):
         c[3] = tmp2
         if skill1[id1] == skill2[id2] or tmp2 < 0:
             tmp2 = 0
+            c[2] = -1
+            c[3] = 0
     else:
         c[2] = -1
         tmp2 = 0
