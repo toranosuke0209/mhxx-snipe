@@ -1486,29 +1486,30 @@ function snTimerStop() {
   const btn = document.getElementById('sn-timer-btn');
   if (btn) { btn.textContent = '▶ スタート'; btn.className = 'ctrl-btn start'; }
 }
-let craftMeasureStart = null;
+let craftMeasureStartTime = null;
 
 function craftMeasureToggle() {
   const btn = document.getElementById('craft-measure-btn');
   const result = document.getElementById('craft-measure-result');
-  if (craftMeasureStart === null) {
-    craftMeasureStart = snFrame;
+  if (craftMeasureStartTime === null) {
+    craftMeasureStartTime = performance.now();
     btn.textContent = '⏹ 調合終了';
     btn.style.background = 'var(--accent)';
     btn.style.color = '#fff';
     result.textContent = '計測中...';
   } else {
-    const elapsed = snFrame - craftMeasureStart;
-    craftMeasureStart = null;
+    const ms = performance.now() - craftMeasureStartTime;
+    const elapsed = Math.round(ms / (1000 / 30));
+    craftMeasureStartTime = null;
     btn.textContent = '⏱ 調合開始';
     btn.style.background = 'var(--surface)';
     btn.style.color = 'var(--text)';
     if (elapsed > 0 && snTarget > 0) {
       snTarget -= elapsed;
-      result.textContent = `調合 ${elapsed}F → 目標フレームを ${elapsed}F 引きました（新目標: ${snTarget.toLocaleString()}F）`;
+      result.textContent = `調合 ${elapsed}F (${(ms/1000).toFixed(2)}s) → 目標: ${snTarget.toLocaleString()}F`;
       document.getElementById('sn-frame').textContent = snTarget.toLocaleString();
     } else {
-      result.textContent = elapsed <= 0 ? '計測失敗（タイマーが動いていません）' : `調合 ${elapsed}F`;
+      result.textContent = `調合 ${elapsed}F`;
     }
   }
 }
