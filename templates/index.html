@@ -920,8 +920,10 @@ function showSnipe(result) {
   snTarget = result.frame;
   snTimerReset();
   trialCount = 0;
+  craftElapsed = 0;
   document.getElementById('sn-trial').textContent = 0;
   document.getElementById('sn-memo').value = '';
+  document.getElementById('craft-measure-result').textContent = '—';
 
   document.getElementById('screen-search').classList.remove('active');
   document.getElementById('screen-favs').classList.remove('active');
@@ -1487,6 +1489,7 @@ function snTimerStop() {
   if (btn) { btn.textContent = '▶ スタート'; btn.className = 'ctrl-btn start'; }
 }
 let craftMeasureStartTime = null;
+let craftElapsed = 0;
 
 function craftMeasureToggle() {
   const btn = document.getElementById('craft-measure-btn');
@@ -1505,12 +1508,8 @@ function craftMeasureToggle() {
     btn.style.background = 'var(--surface)';
     btn.style.color = 'var(--text)';
     if (elapsed > 0) {
-      snFrame += elapsed;
-      document.getElementById('sn-current').textContent      = snFrame.toLocaleString();
-      document.getElementById('sn-current-time').textContent = frameToTime(snFrame);
-      const remain = snTarget - snFrame;
-      document.getElementById('sn-remain').textContent = remain > 0 ? `目標まで ${remain.toLocaleString()} F` : '目標フレーム到達！';
-      result.textContent = `調合 ${elapsed}F (${(ms/1000).toFixed(2)}s) → 現在フレーム +${elapsed}F`;
+      craftElapsed = elapsed;
+      result.textContent = `調合 ${elapsed}F (${(ms/1000).toFixed(2)}s) → セット時に自動加算されます`;
     } else {
       result.textContent = `調合 ${elapsed}F`;
     }
@@ -1532,7 +1531,7 @@ function snTimerReset() {
 function snSetCurrentFrame() {
   const val = parseInt(document.getElementById('sn-current-input').value) || 0;
   snTimerStop();
-  snFrame = val;
+  snFrame = val + craftElapsed;
   document.getElementById('sn-current').textContent      = snFrame.toLocaleString();
   document.getElementById('sn-current-time').textContent = frameToTime(snFrame);
   const remain = snTarget - snFrame;
