@@ -579,6 +579,17 @@
     </div>
   </div>
 
+  <!-- Trial counter -->
+  <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin:12px 0;padding:12px 20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
+    <span style="font-size:0.78rem;color:var(--text2);white-space:nowrap">試行回数</span>
+    <button onclick="trialCount=Math.max(0,trialCount-1);document.getElementById('sn-trial').textContent=trialCount"
+      style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 14px;font-size:1rem;cursor:pointer">－</button>
+    <span id="sn-trial" style="font-family:monospace;font-size:2rem;font-weight:700;color:var(--accent);min-width:2ch;text-align:center">0</span>
+    <button onclick="trialCount++;document.getElementById('sn-trial').textContent=trialCount"
+      style="background:var(--accent);border:none;color:#fff;border-radius:6px;padding:4px 14px;font-size:1rem;cursor:pointer;font-weight:700">＋</button>
+    <span style="font-size:0.78rem;color:var(--text2)">回</span>
+  </div>
+
   <!-- Timer buttons -->
   <div class="workflow-steps">
     <div class="wf-step"><span class="wf-num">①</span><span class="wf-text">調合開始と同時に<br><b>▶ スタート</b></span></div>
@@ -841,6 +852,8 @@ function showSnipe(result) {
 
   snTarget = result.frame;
   snTimerReset();
+  trialCount = 0;
+  document.getElementById('sn-trial').textContent = 0;
 
   document.getElementById('screen-search').classList.remove('active');
   document.getElementById('screen-favs').classList.remove('active');
@@ -1277,6 +1290,7 @@ const MS_PER_FRAME = 1000 / FPS;
 let snTarget = 0;
 let snFrame  = 0;
 let snRunning = false;
+let trialCount = 0;
 let snInterval = null;
 
 function frameToTime(fr) {
