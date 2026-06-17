@@ -1506,6 +1506,10 @@ function craftMeasureToggle() {
     btn.style.color = 'var(--text)';
     if (elapsed > 0) {
       snFrame += elapsed;
+      document.getElementById('sn-current').textContent      = snFrame.toLocaleString();
+      document.getElementById('sn-current-time').textContent = frameToTime(snFrame);
+      const remain = snTarget - snFrame;
+      document.getElementById('sn-remain').textContent = remain > 0 ? `目標まで ${remain.toLocaleString()} F` : '目標フレーム到達！';
       result.textContent = `調合 ${elapsed}F (${(ms/1000).toFixed(2)}s) → 現在フレーム +${elapsed}F`;
     } else {
       result.textContent = `調合 ${elapsed}F`;
