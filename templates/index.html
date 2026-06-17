@@ -198,11 +198,15 @@
     .target-rare      { font-size: 0.85rem; font-weight: 700; }
 
     /* Big frame counter */
-    .counter-area { text-align: center; }
+    .counter-area { display: flex; gap: 24px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
+    .counter-main { text-align: center; }
+    .counter-near { text-align: center; border-left: 1px solid var(--border); padding-left: 24px; }
+    .counter-near-label { font-size: 0.7rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
     .counter-current {
       font-family: monospace; font-size: 4rem; font-weight: 700; color: var(--blue);
       line-height: 1; letter-spacing: 0.05em;
     }
+    .counter-near .counter-current { font-size: 2.6rem; color: var(--green); }
     .counter-time { font-family: monospace; font-size: 1rem; color: var(--text2); margin-top: 6px; }
     .counter-remain {
       font-family: monospace; font-size: 1.5rem; font-weight: 700; margin-top: 12px;
@@ -510,9 +514,16 @@
 
   <!-- Big counter -->
   <div class="counter-area">
-    <div class="counter-current" id="sn-current">0</div>
-    <div class="counter-time"    id="sn-current-time">0d 0h 0m 0s 0f</div>
-    <div class="counter-remain"  id="sn-remain">目標まで — F</div>
+    <div class="counter-main">
+      <div class="counter-current" id="sn-current">0</div>
+      <div class="counter-time"    id="sn-current-time">0d 0h 0m 0s 0f</div>
+      <div class="counter-remain"  id="sn-remain">目標まで — F</div>
+    </div>
+    <div class="counter-near" id="sn-near-timer">
+      <div class="counter-near-label">1回押し後の残り</div>
+      <div class="counter-current" id="sn-near-current">—</div>
+      <div class="counter-time"    id="sn-near-time">—</div>
+    </div>
   </div>
 
   <!-- Timer buttons -->
@@ -1193,12 +1204,30 @@ function snUpdateContinueCount() {
   }
 }
 
+function snUpdateNearTimer() {
+  const fpc = parseInt(document.getElementById('sn-fpc').value) || 700;
+  const nearRemain = snTarget - snFrame - fpc;
+  const nearEl  = document.getElementById('sn-near-current');
+  const nearTEl = document.getElementById('sn-near-time');
+  if (!nearEl) return;
+  if (nearRemain > 0) {
+    nearEl.textContent  = nearRemain.toLocaleString() + ' F';
+    nearTEl.textContent = frameToTime(nearRemain);
+    nearEl.style.color  = nearRemain <= 300 ? 'var(--accent)' : 'var(--green)';
+  } else if (nearRemain <= 0) {
+    nearEl.textContent  = '✔ タイミング';
+    nearTEl.textContent = '';
+    nearEl.style.color  = 'var(--green)';
+  }
+}
+
 function snTimerTick() {
   snFrame++;
   const remain = snTarget - snFrame;
   document.getElementById('sn-current').textContent      = snFrame.toLocaleString();
   document.getElementById('sn-current-time').textContent = frameToTime(snFrame);
   snUpdateContinueCount();
+  snUpdateNearTimer();
 
   const rem = document.getElementById('sn-remain');
   if (remain > 0) {
@@ -1256,6 +1285,7 @@ function snTimerReset() {
   document.getElementById('sn-remain').textContent       = `目標まで ${snTarget.toLocaleString()} F`;
   document.getElementById('sn-remain').className = 'counter-remain';
   snUpdateContinueCount();
+  snUpdateNearTimer();
 }
 
 function snSetCurrentFrame() {
@@ -1271,6 +1301,7 @@ function snSetCurrentFrame() {
                   : `目標を ${Math.abs(remain)} F 超過`;
   rem.className = 'counter-remain' + (remain <= 0 ? ' ok' : remain <= 300 ? ' close' : '');
   snUpdateContinueCount();
+  snUpdateNearTimer();
 }
 
 // ─── Metronome ────────────────────────────────────────────
