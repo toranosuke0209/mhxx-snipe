@@ -1504,10 +1504,9 @@ function craftMeasureToggle() {
     btn.textContent = '⏱ 調合開始';
     btn.style.background = 'var(--surface)';
     btn.style.color = 'var(--text)';
-    if (elapsed > 0 && snTarget > 0) {
-      snTarget -= elapsed;
-      result.textContent = `調合 ${elapsed}F (${(ms/1000).toFixed(2)}s) → 目標: ${snTarget.toLocaleString()}F`;
-      document.getElementById('sn-frame').textContent = snTarget.toLocaleString();
+    if (elapsed > 0) {
+      snFrame += elapsed;
+      result.textContent = `調合 ${elapsed}F (${(ms/1000).toFixed(2)}s) → 現在フレーム +${elapsed}F`;
     } else {
       result.textContent = `調合 ${elapsed}F`;
     }
