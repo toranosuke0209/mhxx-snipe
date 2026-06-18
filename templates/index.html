@@ -1399,7 +1399,7 @@ function renderPresets(presets) {
   }
   el.innerHTML = presets.map(p => `
     <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
-      <button onclick="applyPreset(${p.id})" style="flex:1;text-align:left;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:0.82rem;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p.name)}</button>
+      <button onclick="applyPreset(${p.id})" style="flex:1;text-align:left;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:0.82rem;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)">${escHtml(p.name)}</button>
       <button onclick="deletePreset(${p.id})" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:1rem;padding:0 4px">✕</button>
     </div>`).join('');
   // stash presets data for apply
