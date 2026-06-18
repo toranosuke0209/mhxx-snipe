@@ -2298,9 +2298,9 @@ function useDefaultRegion() {
   if (!videoNativeW || !videoNativeH) return;
   // Switch 1080p: 所持数は画面右側中央あたり
   const x = Math.round(videoNativeW * 0.58);
-  const y = Math.round(videoNativeH * 0.30);
+  const y = Math.round(videoNativeH * 0.29);
   const w = Math.round(videoNativeW * 0.08);
-  const h = Math.round(videoNativeH * 0.07);
+  const h = Math.round(videoNativeH * 0.10);
   videoRegion = {x, y, w, h};
   document.getElementById('video-region-hint').textContent = `デフォルト: x=${x} y=${y} w=${w} h=${h}`;
   document.getElementById('video-analyze-btn').disabled = false;
