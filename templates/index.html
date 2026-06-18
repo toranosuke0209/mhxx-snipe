@@ -472,7 +472,7 @@
     <div class="skill-combo" id="skill1-combo" data-sp="sp1"></div>
     <div class="row">
       <label>ポイント</label>
-      <input type="number" id="sp1" value="7" min="1" max="20" style="width:80px">
+      <select id="sp1" style="width:80px"></select>
       <span id="sp1-max" style="color:var(--text2);font-size:0.78rem"></span>
     </div>
 
@@ -480,7 +480,7 @@
     <div class="skill-combo" id="skill2-combo" data-sp="sp2" data-nullable="1"></div>
     <div class="row">
       <label>ポイント</label>
-      <input type="number" id="sp2" value="5" min="1" max="20" style="width:80px">
+      <select id="sp2" style="width:80px"></select>
       <span id="sp2-max" style="color:var(--text2);font-size:0.78rem"></span>
     </div>
 
@@ -1021,10 +1021,25 @@ function buildCombo(containerId, options) {
     const max = (isAny || isEmpty) ? 20 : parseInt(opt.max || 20);
     const spInput = document.getElementById(spId);
     const spLabel = document.getElementById(spId + '-max');
-    spInput.max = max;
-    spInput.disabled = isEmpty;
-    if (parseInt(spInput.value) > max) spInput.value = max;
-    if (spLabel) spLabel.textContent = isEmpty ? '' : `以上 (max ${max})`;
+    if (!spInput) return;
+    if (spInput.tagName === 'SELECT') {
+      const prev = parseInt(spInput.value) || 1;
+      spInput.innerHTML = '';
+      if (!isEmpty) {
+        for (let v = 1; v <= max; v++) {
+          const o = document.createElement('option');
+          o.value = v; o.textContent = v;
+          if (v === prev || (prev > max && v === max)) o.selected = true;
+          spInput.appendChild(o);
+        }
+      }
+      spInput.disabled = isEmpty;
+    } else {
+      spInput.max = max;
+      spInput.disabled = isEmpty;
+      if (parseInt(spInput.value) > max) spInput.value = max;
+    }
+    if (spLabel) spLabel.textContent = isEmpty ? '' : `(max ${max})`;
   }
 
   function positionDropdown() {
@@ -1154,6 +1169,18 @@ async function loadSkills() {
   buildCombo('skill2-combo', opts2);
   buildCombo('result-skill1-combo', opts1);
   buildCombo('result-skill2-combo', opts2);
+
+  ['sp1', 'sp2'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (sel && sel.tagName === 'SELECT' && !sel.options.length) {
+      for (let v = 1; v <= 20; v++) {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = v;
+        if ((id === 'sp1' && v === 7) || (id === 'sp2' && v === 5)) o.selected = true;
+        sel.appendChild(o);
+      }
+    }
+  });
 }
 
 function updateSpMax() {} // kept for compat — no longer used directly
