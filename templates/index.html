@@ -32,14 +32,26 @@
     header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 14px 24px;
+      padding: 10px 24px;
+    }
+    .header-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
     }
-    header h1 { font-size: 1.2rem; font-weight: 700; }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { font-size: 1.2rem; font-weight: 700; white-space: nowrap; }
     header .subtitle { color: var(--text2); font-size: 0.82rem; }
+    @media (max-width: 700px) {
+      header { padding: 8px 12px; }
+      header h1 { font-size: 0.95rem; }
+      .header-right { gap: 8px; }
+    }
     .back-btn {
       display: none;
       background: var(--surface2);
@@ -268,8 +280,6 @@
       .main { padding: 12px; }
 
       /* ヘッダー */
-      header { padding: 10px 14px; }
-      header h1 { font-size: 1rem; }
       header .subtitle { display: none; }
 
       /* 検索ボタン・入力 */
@@ -427,18 +437,17 @@
 </div>
 
 <header>
-  <div>
+  <div class="header-top">
     <h1>⚔️ MHXX お守りスナイプ</h1>
-    <div class="subtitle">Monster Hunter XX Charm RNG Tool</div>
-  </div>
-  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-    <nav class="nav-tabs">
-      <button class="nav-tab active" id="nav-search" onclick="showSearch()">🔍 検索</button>
-      <button class="nav-tab" id="nav-favs" onclick="showFavs()">★ お気に入り</button>
-    </nav>
-    <div class="user-chip" id="user-chip">
-      <strong id="user-display"></strong>
-      <a onclick="changeUsername()">変更</a>
+    <div class="header-right">
+      <nav class="nav-tabs">
+        <button class="nav-tab active" id="nav-search" onclick="showSearch()">🔍 検索</button>
+        <button class="nav-tab" id="nav-favs" onclick="showFavs()">★ お気に入り</button>
+      </nav>
+      <div class="user-chip" id="user-chip">
+        <strong id="user-display"></strong>
+        <a onclick="changeUsername()">変更</a>
+      </div>
     </div>
   </div>
 </header>
