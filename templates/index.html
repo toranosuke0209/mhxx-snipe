@@ -532,6 +532,11 @@
     </div>
 
     <button class="search-btn" id="search-btn" onclick="doSearch()">🔍 検索</button>
+    <div id="admin-search-area" style="display:none">
+      <button class="search-btn" id="hunt-btn" onclick="startHunt()" style="margin-top:8px;background:var(--red,#c0392b)">🎯 見つかるまで探す</button>
+      <button id="hunt-cancel-btn" onclick="cancelHunt()" style="display:none;width:100%;margin-top:6px;background:none;border:1px solid var(--text2);color:var(--text2);border-radius:8px;padding:10px;cursor:pointer;font-size:0.9rem">⏹ 中止</button>
+      <div id="hunt-progress" style="display:none;margin-top:8px;font-size:0.82rem;color:var(--text2);text-align:center"></div>
+    </div>
     <div class="spinner" id="spinner">検索中...</div>
 
   </aside>
@@ -1529,6 +1534,88 @@ function collectSkillConditions(num) {
   return conditions;
 }
 
+// ─── Admin: Hunt until found ───────────────────────────────
+let _huntActive = false;
+
+function showAdminFeatures() {
+  if (getUsername() === 'admin') {
+    document.getElementById('admin-search-area').style.display = '';
+  }
+}
+
+async function startHunt() {
+  if (_huntActive) return;
+  _huntActive = true;
+  const huntBtn    = document.getElementById('hunt-btn');
+  const cancelBtn  = document.getElementById('hunt-cancel-btn');
+  const progressEl = document.getElementById('hunt-progress');
+  const errorArea  = document.getElementById('error-area');
+  errorArea.innerHTML = '';
+  huntBtn.disabled = true;
+  cancelBtn.style.display = '';
+  progressEl.style.display = '';
+
+  const step = parseInt(document.getElementById('step').value) || 500000;
+  let start  = parseInt(document.getElementById('start').value) || 0;
+  const MAX  = 100_000_000;
+
+  const basePayload = {
+    lang: currentLang, color: currentColor, mode: currentMode,
+    seed: document.getElementById('seed').value.trim(),
+    origin: document.getElementById('origin').value,
+    slots: currentSlot,
+    step,
+  };
+  const skill1Conds = collectSkillConditions(1);
+  const skill2Conds = collectSkillConditions(2);
+  const combos = [];
+  for (const s1 of skill1Conds) for (const s2 of skill2Conds) combos.push({s1, s2});
+
+  try {
+    while (_huntActive && start <= MAX) {
+      progressEl.textContent = `探索中… ${start.toLocaleString()} F 〜 ${Math.min(start + step, MAX).toLocaleString()} F`;
+      const all = await Promise.all(combos.map(({s1, s2}) =>
+        fetch('/api/search', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({...basePayload, start, skill1: s1.skill, sp1: s1.sp, skill2: s2.skill, sp2: s2.sp}),
+        }).then(r => r.json())
+      ));
+      const errorMsg = all.find(d => d.error);
+      if (errorMsg) { errorArea.innerHTML = `<div class="error-msg">⚠️ ${errorMsg.error}</div>`; break; }
+
+      const seen = new Set();
+      const merged = [];
+      for (const d of all) for (const r of (d.results || [])) {
+        if (!seen.has(r.frame)) { seen.add(r.frame); merged.push(r); }
+      }
+      merged.sort((a, b) => a.frame - b.frame);
+
+      if (merged.length > 0) {
+        searchResults = merged;
+        renderResults({results: merged, count: merged.length, cached: all.some(d => d.cached)});
+        progressEl.textContent = `✅ ${start.toLocaleString()} F 付近で ${merged.length} 件見つかりました`;
+        break;
+      }
+      start += step;
+    }
+    if (_huntActive && start > MAX) {
+      progressEl.textContent = '❌ 1億フレーム以内では見つかりませんでした';
+    }
+  } catch (e) {
+    errorArea.innerHTML = `<div class="error-msg">⚠️ 通信エラー: ${e.message}</div>`;
+  } finally {
+    _huntActive = false;
+    huntBtn.disabled = false;
+    cancelBtn.style.display = 'none';
+  }
+}
+
+function cancelHunt() {
+  _huntActive = false;
+  document.getElementById('hunt-progress').textContent = '中止しました';
+}
+
 async function doSearch() {
   const btn = document.getElementById('search-btn');
   const spinner = document.getElementById('spinner');
@@ -1912,6 +1999,7 @@ function confirmUsername() {
   localStorage.setItem('mhxx_username', val);
   document.getElementById('user-display').textContent = val;
   document.getElementById('account-modal').style.display = 'none';
+  showAdminFeatures();
   renderFavs();
   loadOffsetHistory();
   loadPresets();
@@ -1924,6 +2012,7 @@ function changeUsername() {
 
 loadSkills();
 initAccount();
+showAdminFeatures();
 renderFavs();
 loadPresets();
 loadOffsetHistory();
