@@ -224,7 +224,7 @@ def getcharm(_origin):
                 q4, q5 = r4, r5
             tmp2 = q4 % sp2[id2][1] + 1
         c[3] = tmp2
-        if skill1[id1] == skill2[id2] or tmp2 < 0:
+        if skill1[id1] == skill2[id2] or tmp2 == 0:
             tmp2 = 0
             c[2] = -1
             c[3] = 0
