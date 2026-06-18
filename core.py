@@ -424,3 +424,17 @@ def get_origin_list():
 
 def get_kinds_list():
     return list(kinds)
+
+
+def generate_range(start, count, _origin=0):
+    """Generate raw charm data for `count` frames starting at `start`.
+    Returns list of [skill1_id, sp1, skill2_id, sp2, slots, rare] per frame.
+    skill2_id = -1 means no skill2.
+    """
+    jump(start)
+    results = []
+    for _ in range(count):
+        roll()
+        c = getcharm(_origin)
+        results.append([c[0], c[1], c[2], c[3], c[4], c[7]])
+    return results

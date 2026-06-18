@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import core
 import video_analyze
+import charm_cache
 import sqlite3
 import os
 
@@ -144,16 +145,28 @@ def do_search():
     p = [_id1, sp1, _id2, sp2, slots, _origin, len(core.skill1), len(core.skill2)]
 
     try:
-        if skill2_any:
-            results = core.search_any_skill2(start, step, p)
-        elif mode == 'exact':
-            results = core.search(start, step, p)
-        else:
-            results = core.search_greater(start, step, p)
+        results = None
+        used_cache = False
+        # デフォルトシード使用時はキャッシュを優先
+        if not seed_raw and charm_cache.is_ready() and not skill2_any:
+            if mode == 'exact':
+                results = charm_cache.search(start, step, p)
+            else:
+                results = charm_cache.search_greater(start, step, p)
+            if results is not None:
+                used_cache = True
+
+        if results is None:
+            if skill2_any:
+                results = core.search_any_skill2(start, step, p)
+            elif mode == 'exact':
+                results = core.search(start, step, p)
+            else:
+                results = core.search_greater(start, step, p)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-    return jsonify({'results': results, 'count': len(results)})
+    return jsonify({'results': results, 'count': len(results), 'cached': used_cache})
 
 
 @app.route('/api/search_combo', methods=['POST'])
@@ -300,6 +313,14 @@ def offset_history_get():
     avg_diff = (sum(r['diff'] for r in records) / len(records)) if records else None
     con.close()
     return jsonify({'records': records, 'avg_diff': avg_diff})
+
+
+@app.route('/api/cache_status')
+def cache_status():
+    return jsonify({
+        'ready': charm_cache.is_ready(),
+        'frames': charm_cache.cache_size(),
+    })
 
 
 if __name__ == '__main__':
