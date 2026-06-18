@@ -1,68 +1,32 @@
 """
 動画から調合所持数の変化を自動抽出するモジュール。
-Switch MHXX (1080p) のキャプチャ動画を想定。
-
-OCR部分は digit_templates/ にテンプレート画像が揃ったら実装する（TODO）。
+Tesseract OCRを使用。領域指定は任意（未指定時はデフォルト比率を使用）。
 """
 
 import base64
 import io
 import os
+import re
 import tempfile
 
 import cv2
 import numpy as np
+from PIL import Image, ImageEnhance
 
+try:
+    import pytesseract
+    _TESSERACT_OK = True
+except ImportError:
+    _TESSERACT_OK = False
 
-# ── テンプレートマッチング（TODO: スクショが揃ったら実装） ──────────────
-TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), 'digit_templates')
+# デフォルト領域比率（非ズーム 1280x720 で検証済み）
+DEFAULT_X_RATIO = 0.55
+DEFAULT_Y_RATIO = 0.33
+DEFAULT_W_RATIO = 0.13
+DEFAULT_H_RATIO = 0.09
 
-def _load_templates():
-    """0〜9のテンプレート画像をロードして返す。未実装時は None。"""
-    templates = {}
-    if not os.path.isdir(TEMPLATES_DIR):
-        return None
-    for d in range(10):
-        path = os.path.join(TEMPLATES_DIR, f'{d}.png')
-        if not os.path.exists(path):
-            return None
-        img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-        if img is None:
-            return None
-        templates[d] = img
-    return templates
-
-_TEMPLATES = None  # 起動時に一度だけロード
-
-
-def _read_digit(roi_gray, templates):
-    """1桁のROI画像をテンプレートマッチングで読む。失敗時は -1。"""
-    best_val, best_digit = -1, -1
-    for digit, tmpl in templates.items():
-        if roi_gray.shape[0] < tmpl.shape[0] or roi_gray.shape[1] < tmpl.shape[1]:
-            continue
-        res = cv2.matchTemplate(roi_gray, tmpl, cv2.TM_CCOEFF_NORMED)
-        _, max_val, _, _ = cv2.minMaxLoc(res)
-        if max_val > best_val:
-            best_val, best_digit = max_val, digit
-    return best_digit if best_val > 0.7 else -1
-
-
-def _read_two_digit(roi_gray, templates):
-    """2桁の所持数を左右に分割して読む。失敗時は -1。"""
-    h, w = roi_gray.shape
-    mid = w // 2
-    tens = _read_digit(roi_gray[:, :mid], templates)
-    ones = _read_digit(roi_gray[:, mid:], templates)
-    if tens < 0 or ones < 0:
-        return -1
-    return tens * 10 + ones
-
-
-# ── 動画処理ユーティリティ ──────────────────────────────────────────────
 
 def _save_upload_to_tmp(file_storage):
-    """FlaskのFileStorageを一時ファイルに保存してパスを返す。"""
     suffix = os.path.splitext(file_storage.filename or '.mp4')[1] or '.mp4'
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
     file_storage.save(tmp.name)
@@ -70,13 +34,22 @@ def _save_upload_to_tmp(file_storage):
     return tmp.name
 
 
-# ── 公開API ────────────────────────────────────────────────────────────
+def _ocr_count(frame_bgr, x, y, w, h):
+    """指定領域からX/99形式の数値を読み取る。失敗時はNone。"""
+    roi = frame_bgr[y:y+h, x:x+w]
+    pil = Image.fromarray(cv2.cvtColor(roi, cv2.COLOR_BGR2RGB))
+    pil = pil.resize((pil.width * 6, pil.height * 6), Image.LANCZOS)
+    gray = pil.convert('L')
+    bw = gray.point(lambda v: 255 if v > 150 else 0)
+    raw = pytesseract.image_to_string(bw, config='--psm 6 -c tessedit_char_whitelist=0123456789/')
+    m = re.search(r'(\d+)/\d+', raw)
+    if m:
+        return int(m.group(1))
+    return None
+
 
 def extract_first_frame(file_storage):
-    """
-    動画の最初のフレームをBase64エンコードJPEGで返す。
-    フロントエンドで所持数の領域を選択させるために使う。
-    """
+    """動画の最初のフレームをBase64エンコードJPEGで返す。"""
     tmp_path = _save_upload_to_tmp(file_storage)
     try:
         cap = cv2.VideoCapture(tmp_path)
@@ -86,49 +59,56 @@ def extract_first_frame(file_storage):
             raise ValueError('動画の読み込みに失敗しました')
         _, buf = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
         b64 = base64.b64encode(buf.tobytes()).decode('ascii')
-        h, w = frame.shape[:2]
-        return {'image': f'data:image/jpeg;base64,{b64}', 'width': w, 'height': h}
+        fh, fw = frame.shape[:2]
+        # デフォルト領域をピクセル値で返す
+        default_rect = {
+            'x': int(fw * DEFAULT_X_RATIO),
+            'y': int(fh * DEFAULT_Y_RATIO),
+            'w': int(fw * DEFAULT_W_RATIO),
+            'h': int(fh * DEFAULT_H_RATIO),
+        }
+        return {'image': f'data:image/jpeg;base64,{b64}', 'width': fw, 'height': fh, 'default_rect': default_rect}
     finally:
         os.unlink(tmp_path)
 
 
 def extract_counts(file_storage, x, y, width, height):
     """
-    動画全体を走査し、指定領域の所持数が変化したフレームの値を返す。
-
-    Returns:
-        {'counts': [0, 3, 6, 9, ...], 'combo_str': '00 03 06 09 ...'}
-        or {'error': '...', 'todo': True} if templates are not ready
+    動画全体を走査し、所持数が変化したフレームの値を返す。
+    x=0,y=0,width=0,height=0 の場合はデフォルト比率を使用。
     """
-    global _TEMPLATES
-    if _TEMPLATES is None:
-        _TEMPLATES = _load_templates()
-
-    if _TEMPLATES is None:
-        # テンプレート未実装 — スクリーンショットが揃ったら digit_templates/ に追加する
-        return {
-            'error': 'digit_templates/ にテンプレート画像がありません。スクリーンショットから作成してください。',
-            'todo': True,
-        }
+    if not _TESSERACT_OK:
+        return {'error': 'pytesseract がインストールされていません。'}
 
     tmp_path = _save_upload_to_tmp(file_storage)
     try:
         cap = cv2.VideoCapture(tmp_path)
+        fw = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        fh = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+        # 領域未指定ならデフォルト比率で計算
+        if width == 0 or height == 0:
+            x = int(fw * DEFAULT_X_RATIO)
+            y = int(fh * DEFAULT_Y_RATIO)
+            width  = int(fw * DEFAULT_W_RATIO)
+            height = int(fh * DEFAULT_H_RATIO)
+
         counts = []
-        prev_val = -1
+        prev_val = None
+        frame_idx = 0
+        fps = cap.get(cv2.CAP_PROP_FPS) or 30
 
         while True:
             ok, frame = cap.read()
             if not ok:
                 break
-
-            roi = frame[y:y+height, x:x+width]
-            gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-            val = _read_two_digit(gray, _TEMPLATES)
-
-            if val >= 0 and val != prev_val:
-                counts.append(val)
-                prev_val = val
+            # 毎フレームは重いので1秒に数回サンプリング（約6fps）
+            if frame_idx % max(1, int(fps / 6)) == 0:
+                val = _ocr_count(frame, x, y, width, height)
+                if val is not None and val != prev_val:
+                    counts.append(val)
+                    prev_val = val
+            frame_idx += 1
 
         cap.release()
 
