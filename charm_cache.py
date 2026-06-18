@@ -38,6 +38,22 @@ def cache_size():
     return _cache_size
 
 
+CHUNK = 5_000_000
+
+
+def _make_charm(fr):
+    c = _cache[fr]
+    s2_id = int(c['s2']) if c['s2'] != 255 else -1
+    return {
+        'skill1': core.skill[int(c['s1'])].strip(),
+        'sp1': int(c['p1']),
+        'skill2': core.skill[s2_id].strip() if s2_id != -1 else None,
+        'sp2': int(c['p2']) if s2_id != -1 else None,
+        'slots': int(c['sl']),
+        'rare': int(c['ra']),
+    }
+
+
 def search(start, step, p, limit=200):
     """キャッシュから検索。Noneを返した場合はcore.searchにフォールバック。"""
     if not is_ready():
@@ -47,41 +63,28 @@ def search(start, step, p, limit=200):
     if start >= _cache_size:
         return None  # キャッシュ範囲外
 
-    arr = _cache[start:end]
-    frames = np.arange(start, end)
-
-    # _id1/_id2 はskill1/skill2リストのインデックス → global skill indexに変換
     gs1 = core.skill1[_id1] if _id1 >= 0 else -1
     gs2 = core.skill2[_id2] if _id2 >= 0 else -1
 
-    # skill1フィルタ
-    if gs1 >= 0:
-        mask = (arr['s1'] == gs1) & (arr['p1'] >= _sp1) & (arr['sl'] >= _slot)
-    else:
-        mask = arr['sl'] >= _slot
-
-    # skill2フィルタ
-    if gs2 >= 0:
-        mask &= (arr['s2'] == gs2) & (arr['p2'] >= _sp2)
-
-    hit_frames = frames[mask]
-    if len(hit_frames) == 0:
-        return []
-
-    # 結果を辞書に変換
     results = []
-    for fr in hit_frames[:limit]:
-        c = _cache[fr]
-        s2_id = int(c['s2']) if c['s2'] != 255 else -1
-        charm = {
-            'skill1': core.skill[int(c['s1'])].strip(),
-            'sp1': int(c['p1']),
-            'skill2': core.skill[s2_id].strip() if s2_id != -1 else None,
-            'sp2': int(c['p2']) if s2_id != -1 else None,
-            'slots': int(c['sl']),
-            'rare': int(c['ra']),
-        }
-        results.append({'frame': int(fr), 'time': core.watch_str(int(fr)), 'charm': charm})
+    for chunk_start in range(start, end, CHUNK):
+        chunk_end = min(chunk_start + CHUNK, end)
+        arr = _cache[chunk_start:chunk_end]
+        frames = np.arange(chunk_start, chunk_end)
+
+        if gs1 >= 0:
+            mask = (arr['s1'] == gs1) & (arr['p1'] >= _sp1) & (arr['sl'] >= _slot)
+        else:
+            mask = arr['sl'] >= _slot
+
+        if gs2 >= 0:
+            mask &= (arr['s2'] == gs2) & (arr['p2'] >= _sp2)
+
+        for fr in frames[mask]:
+            results.append({'frame': int(fr), 'time': core.watch_str(int(fr)), 'charm': _make_charm(int(fr))})
+            if len(results) >= limit:
+                return results
+
     return results
 
 
@@ -94,41 +97,31 @@ def search_greater(start, step, p, limit=200):
     if start >= _cache_size:
         return None
 
-    arr = _cache[start:end]
-    frames = np.arange(start, end)
-
     skip1 = (_id1 == -1)
     skip2 = (_id2 == -1)
     gs1 = core.skill1[_id1] if not skip1 else -1
     gs2 = core.skill2[_id2] if not skip2 else -1
 
-    if skip1:
-        mask = (arr['p1'] >= _sp1) & (arr['sl'] >= _slot)
-        # skill1==skill2 除外
-        mask &= (arr['s1'] != arr['s2'])
-    else:
-        mask = (arr['s1'] == gs1) & (arr['p1'] >= _sp1) & (arr['sl'] >= _slot)
-
-    if not skip2:
-        mask &= (arr['s2'] == gs2) & (arr['p2'] >= _sp2)
-
-    hit_frames = frames[mask]
-    if len(hit_frames) == 0:
-        return []
-
     results = []
-    for fr in hit_frames[:limit]:
-        c = _cache[fr]
-        s2_id = int(c['s2']) if c['s2'] != 255 else -1
-        charm = {
-            'skill1': core.skill[int(c['s1'])].strip(),
-            'sp1': int(c['p1']),
-            'skill2': core.skill[s2_id].strip() if s2_id != -1 else None,
-            'sp2': int(c['p2']) if s2_id != -1 else None,
-            'slots': int(c['sl']),
-            'rare': int(c['ra']),
-        }
-        results.append({'frame': int(fr), 'time': core.watch_str(int(fr)), 'charm': charm})
+    for chunk_start in range(start, end, CHUNK):
+        chunk_end = min(chunk_start + CHUNK, end)
+        arr = _cache[chunk_start:chunk_end]
+        frames = np.arange(chunk_start, chunk_end)
+
+        if skip1:
+            mask = (arr['p1'] >= _sp1) & (arr['sl'] >= _slot)
+            mask &= (arr['s1'] != arr['s2'])
+        else:
+            mask = (arr['s1'] == gs1) & (arr['p1'] >= _sp1) & (arr['sl'] >= _slot)
+
+        if not skip2:
+            mask &= (arr['s2'] == gs2) & (arr['p2'] >= _sp2)
+
+        for fr in frames[mask]:
+            results.append({'frame': int(fr), 'time': core.watch_str(int(fr)), 'charm': _make_charm(int(fr))})
+            if len(results) >= limit:
+                return results
+
     return results
 
 
