@@ -108,10 +108,10 @@ def do_search():
     apply_config(lang, color)
 
     start = int(data.get('start', 0))
+    origin_name = data.get('origin', core.origin[0])
     # キャッシュ使用時は上限なし、未使用時は10Mまで
     use_cache = not seed_raw and charm_cache.is_ready() and origin_name == core.origin[0]
     step = int(data.get('step', 100000)) if use_cache else min(int(data.get('step', 100000)), 10000000)
-    origin_name = data.get('origin', core.origin[0])
     skill1_name = data.get('skill1', '')
     sp1 = int(data.get('sp1', 0))
     skill2_name = data.get('skill2', '')
