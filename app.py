@@ -33,6 +33,13 @@ def get_db():
         diff INTEGER NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
+    con.execute('''CREATE TABLE IF NOT EXISTS search_presets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+        name TEXT NOT NULL,
+        conditions_json TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )''')
     con.commit()
     return con
 
@@ -315,6 +322,51 @@ def offset_history_get():
     avg_diff = (sum(r['diff'] for r in records) / len(records)) if records else None
     con.close()
     return jsonify({'records': records, 'avg_diff': avg_diff})
+
+
+@app.route('/api/presets', methods=['GET'])
+def presets_list():
+    import json
+    username = request.args.get('username', '')
+    if not username:
+        return jsonify({'error': 'username required'}), 400
+    con = get_db()
+    rows = con.execute(
+        'SELECT id, name, conditions_json, created_at FROM search_presets WHERE username = ? ORDER BY created_at DESC',
+        (username,)
+    ).fetchall()
+    con.close()
+    return jsonify({'presets': [{'id': r['id'], 'name': r['name'], 'conditions': json.loads(r['conditions_json']), 'created_at': r['created_at']} for r in rows]})
+
+
+@app.route('/api/presets', methods=['POST'])
+def presets_save():
+    import json
+    data = request.json
+    username = data.get('username', '')
+    name = data.get('name', '').strip()
+    conditions = data.get('conditions')
+    if not username or not name or conditions is None:
+        return jsonify({'error': 'username, name and conditions required'}), 400
+    con = get_db()
+    cur = con.execute(
+        'INSERT INTO search_presets (username, name, conditions_json) VALUES (?, ?, ?)',
+        (username, name, json.dumps(conditions))
+    )
+    con.commit()
+    preset_id = cur.lastrowid
+    con.close()
+    return jsonify({'ok': True, 'id': preset_id})
+
+
+@app.route('/api/presets/<int:preset_id>', methods=['DELETE'])
+def presets_delete(preset_id):
+    username = request.args.get('username') or (request.json or {}).get('username', '')
+    con = get_db()
+    con.execute('DELETE FROM search_presets WHERE id = ? AND username = ?', (preset_id, username))
+    con.commit()
+    con.close()
+    return jsonify({'ok': True})
 
 
 @app.route('/api/cache_status')

@@ -478,6 +478,12 @@
 
     <input type="hidden" id="seed" value="">
 
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+      検索プリセット
+      <button class="or-add-btn" style="width:auto;margin:0;padding:3px 10px" onclick="savePreset()">💾 保存</button>
+    </div>
+    <div id="preset-list" style="margin-bottom:8px"></div>
+
     <div class="section-title">入手方法</div>
     <div class="row"><select id="origin"></select></div>
 
@@ -1350,6 +1356,130 @@ function renderResults(data) {
 let searchResults = [];
 function showSnipeByIdx(idx) { showSnipe(searchResults[idx]); }
 
+// ─── Search Presets ───────────────────────────────────────
+function collectConditions() {
+  return {
+    mode: currentMode,
+    slots: currentSlot,
+    start: parseInt(document.getElementById('start').value) || 0,
+    step: parseInt(document.getElementById('step').value) || 100000,
+    origin: document.getElementById('origin').value,
+    skill1: collectSkillConditions(1),
+    skill2: collectSkillConditions(2),
+  };
+}
+
+async function savePreset() {
+  const name = prompt('プリセット名を入力してください');
+  if (!name || !name.trim()) return;
+  const username = getUsername();
+  const conditions = collectConditions();
+  const res = await fetch('/api/presets', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({username, name: name.trim(), conditions}),
+  });
+  const d = await res.json();
+  if (d.ok) loadPresets();
+}
+
+async function loadPresets() {
+  const username = getUsername();
+  if (!username) return;
+  const res = await fetch(`/api/presets?username=${encodeURIComponent(username)}`);
+  const d = await res.json();
+  renderPresets(d.presets || []);
+}
+
+function renderPresets(presets) {
+  const el = document.getElementById('preset-list');
+  if (!presets.length) {
+    el.innerHTML = '<div style="color:var(--text2);font-size:0.8rem">保存済みプリセットなし</div>';
+    return;
+  }
+  el.innerHTML = presets.map(p => `
+    <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
+      <button onclick="applyPreset(${p.id})" style="flex:1;text-align:left;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:0.82rem;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p.name)}</button>
+      <button onclick="deletePreset(${p.id})" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:1rem;padding:0 4px">✕</button>
+    </div>`).join('');
+  // stash presets data for apply
+  el._presets = presets;
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function deletePreset(id) {
+  const username = getUsername();
+  if (!username) return;
+  await fetch(`/api/presets/${id}?username=${encodeURIComponent(username)}`, {method: 'DELETE'});
+  loadPresets();
+}
+
+function applyPreset(id) {
+  const el = document.getElementById('preset-list');
+  const preset = el._presets?.find(p => p.id === id);
+  if (!preset) return;
+  const c = preset.conditions;
+
+  // mode
+  if (c.mode) { currentMode = c.mode; document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t.textContent.includes(c.mode === 'exact' ? '完全' : '以上'))); }
+  // slots
+  if (c.slots !== undefined) setSlot(c.slots);
+  // start/step
+  if (c.start !== undefined) document.getElementById('start').value = c.start;
+  if (c.step !== undefined) document.getElementById('step').value = c.step;
+  // origin
+  if (c.origin) document.getElementById('origin').value = c.origin;
+
+  // restore skill conditions
+  restoreSkillConditions(1, c.skill1 || []);
+  restoreSkillConditions(2, c.skill2 || []);
+}
+
+function restoreSkillConditions(num, conditions) {
+  // clear existing OR rows
+  const list = document.getElementById(`skill${num}-or-list`);
+  list.querySelectorAll('.or-row').forEach(row => {
+    const comboId = row.querySelector('.skill-combo')?.id;
+    if (comboId && skillCombos[comboId]?.el?._dropdown) skillCombos[comboId].el._dropdown.remove();
+    if (comboId) delete skillCombos[comboId];
+  });
+  list.innerHTML = '';
+
+  conditions.forEach((cond, i) => {
+    const opts = num === 1 ? window._skill1Opts : window._skill2Opts;
+    if (!opts) return;
+    if (i === 0) {
+      // restore main combo
+      const comboId = `skill${num}-combo`;
+      const spId = `sp${num}`;
+      if (skillCombos[comboId]) skillCombos[comboId].selected = {value: cond.skill};
+      buildCombo(comboId, opts);
+      setTimeout(() => { const sel = document.getElementById(spId); if (sel) sel.value = cond.sp; }, 50);
+    } else {
+      // add OR row then restore value
+      const id = _orCounter++;
+      const comboId = `skill${num}-or-${id}`;
+      const spId = `sp${num}-or-${id}`;
+      const nullable = num === 2 ? 'data-nullable="1"' : '';
+      const div = document.createElement('div');
+      div.className = 'or-row';
+      div.id = `or-row-${id}-sk${num}`;
+      div.innerHTML = `
+        <div class="or-row-header">
+          <span class="or-label">OR</span>
+          <button class="or-remove-btn" onclick="removeSkillOr('${id}', ${num})">✕</button>
+        </div>
+        <div class="skill-combo" id="${comboId}" data-sp="${spId}" ${nullable}></div>
+        <div class="row"><label>ポイント</label><select id="${spId}" style="width:80px"></select></div>`;
+      list.appendChild(div);
+      skillCombos[comboId] = {selected: {value: cond.skill}};
+      buildCombo(comboId, opts);
+      setTimeout(() => { const sel = document.getElementById(spId); if (sel) sel.value = cond.sp; }, 50);
+    }
+  });
+}
+
 let _orCounter = 0;
 function addSkillOr(num) {
   const id = _orCounter++;
@@ -1786,6 +1916,7 @@ function confirmUsername() {
   document.getElementById('account-modal').style.display = 'none';
   renderFavs();
   loadOffsetHistory();
+  loadPresets();
 }
 
 function changeUsername() {
@@ -1796,6 +1927,7 @@ function changeUsername() {
 loadSkills();
 initAccount();
 renderFavs();
+loadPresets();
 loadOffsetHistory();
 
 // ─── Combo snipe (on snipe screen) ───────────────────────
