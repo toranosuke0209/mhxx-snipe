@@ -156,8 +156,8 @@ def do_search():
     try:
         results = None
         used_cache = False
-        # デフォルトシード使用時はキャッシュを優先
-        if not seed_raw and charm_cache.is_ready() and not skill2_any:
+        # デフォルトシード・マカ使用時はキャッシュを優先
+        if use_cache and not skill2_any:
             if mode == 'exact':
                 results = charm_cache.search(start, step, p)
             else:
