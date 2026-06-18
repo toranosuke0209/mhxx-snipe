@@ -782,13 +782,22 @@
           <div style="font-size:0.75rem;color:var(--text2);margin-bottom:4px">
             所持数が表示されている領域をドラッグで囲んでください
           </div>
+          <div style="margin-bottom:6px">
+            <button onclick="useDefaultRegion()"
+              style="background:var(--bg2);border:1px solid var(--accent);color:var(--accent);border-radius:6px;padding:4px 12px;font-size:0.78rem;cursor:pointer">
+              📐 デフォルト領域を使用
+            </button>
+          </div>
           <div style="position:relative;display:inline-block">
             <img id="video-preview-img" style="max-width:100%;display:block;border-radius:4px">
             <canvas id="video-region-canvas"
               style="position:absolute;top:0;left:0;cursor:crosshair"
               onmousedown="regionStart(event)"
               onmousemove="regionMove(event)"
-              onmouseup="regionEnd(event)"></canvas>
+              onmouseup="regionEnd(event)"
+              ontouchstart="regionTouchStart(event)"
+              ontouchmove="regionTouchMove(event)"
+              ontouchend="regionTouchEnd(event)"></canvas>
           </div>
           <div style="font-size:0.75rem;color:var(--text2);margin-top:4px" id="video-region-hint">未選択</div>
           <button onclick="videoAnalyze()"
@@ -2281,6 +2290,31 @@ function regionMove(e) {
   ctx.fillStyle = 'rgba(0,229,255,0.08)';
   ctx.fillRect(regionDrag.sx, regionDrag.sy, cx - regionDrag.sx, cy - regionDrag.sy);
 }
+function regionTouchStart(e) { e.preventDefault(); regionStart(e.touches[0]); }
+function regionTouchMove(e)  { e.preventDefault(); regionMove(e.touches[0]); }
+function regionTouchEnd(e)   { e.preventDefault(); regionEnd(e.changedTouches[0]); }
+
+function useDefaultRegion() {
+  if (!videoNativeW || !videoNativeH) return;
+  // Switch 1080p: 所持数は画面右側中央あたり
+  const x = Math.round(videoNativeW * 0.58);
+  const y = Math.round(videoNativeH * 0.30);
+  const w = Math.round(videoNativeW * 0.08);
+  const h = Math.round(videoNativeH * 0.07);
+  videoRegion = {x, y, w, h};
+  document.getElementById('video-region-hint').textContent = `デフォルト: x=${x} y=${y} w=${w} h=${h}`;
+  document.getElementById('video-analyze-btn').disabled = false;
+  // キャンバスに矩形を描画
+  const canvas = document.getElementById('video-region-canvas');
+  const scaleX = canvas.width / videoNativeW;
+  const scaleY = canvas.height / videoNativeH;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#0f0';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x * scaleX, y * scaleY, w * scaleX, h * scaleY);
+}
+
 function regionEnd(e) {
   if (!regionDrag) return;
   const canvas = document.getElementById('video-region-canvas');
