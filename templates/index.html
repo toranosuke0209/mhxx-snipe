@@ -1552,28 +1552,26 @@ async function doSearch() {
   for (const s1 of skill1Conds) for (const s2 of skill2Conds) combos.push({s1, s2});
 
   try {
-    const seen = new Set();
-    const merged = [];
-    let anyCached = false;
-    for (const {s1, s2} of combos) {
-      const res = await fetch('/api/search', {
+    const all = await Promise.all(combos.map(({s1, s2}) =>
+      fetch('/api/search', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({...basePayload, skill1: s1.skill, sp1: s1.sp, skill2: s2.skill, sp2: s2.sp}),
-      });
-      const d = await res.json();
-      if (d.error) {
-        errorArea.innerHTML = `<div class="error-msg">⚠️ ${d.error}</div>`;
-        return;
-      }
-      if (d.cached) anyCached = true;
-      for (const r of (d.results || [])) {
+      }).then(r => r.json())
+    ));
+    const errorMsg = all.find(d => d.error);
+    if (errorMsg) {
+      errorArea.innerHTML = `<div class="error-msg">⚠️ ${errorMsg.error}</div>`;
+    } else {
+      const seen = new Set();
+      const merged = [];
+      for (const d of all) for (const r of (d.results || [])) {
         if (!seen.has(r.frame)) { seen.add(r.frame); merged.push(r); }
       }
+      merged.sort((a, b) => a.frame - b.frame);
+      searchResults = merged;
+      renderResults({results: merged, count: merged.length, cached: all.some(d => d.cached)});
     }
-    merged.sort((a, b) => a.frame - b.frame);
-    searchResults = merged;
-    renderResults({results: merged, count: merged.length, cached: anyCached});
   } catch (e) {
     errorArea.innerHTML = `<div class="error-msg">⚠️ 通信エラー: ${e.message}</div>`;
   } finally {
