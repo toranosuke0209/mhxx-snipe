@@ -138,7 +138,7 @@ def extract_counts(file_storage, x, y, width, height):
         counts = []
         prev_val = None
         frame_idx = 0
-        sample_interval = max(1, int(fps / 6))
+        sample_interval = 1
 
         while True:
             ok, frame = cap.read()
