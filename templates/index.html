@@ -50,7 +50,7 @@
     @media (max-width: 700px) {
       header { padding: 8px 12px; }
       header h1 { font-size: 0.95rem; }
-      .header-right { gap: 8px; }
+      .header-right { flex-direction: column; align-items: flex-end; gap: 4px; }
     }
     .back-btn {
       display: none;
@@ -417,7 +417,7 @@
     }
     .nav-tab:hover { background: var(--surface2); color: var(--text); }
     .nav-tab.active { background: var(--accent); color: #fff; font-weight: 700; }
-    @media (max-width: 700px) { .nav-tab { padding: 5px 8px; font-size: 0.75rem; white-space: nowrap; } }
+    @media (max-width: 700px) { .nav-tab { padding: 5px 8px; font-size: 0.75rem; } }
 
     /* ── Favorites screen ── */
     .fav-screen { padding: 24px; max-width: 900px; margin: 0 auto; }
@@ -442,7 +442,7 @@
     <div class="header-right">
       <nav class="nav-tabs">
         <button class="nav-tab active" id="nav-search" onclick="showSearch()">🔍 検索</button>
-        <button class="nav-tab" id="nav-favs" onclick="showFavs()">★ お気に入</button>
+        <button class="nav-tab" id="nav-favs" onclick="showFavs()">★ お気に入り</button>
       </nav>
       <div class="user-chip" id="user-chip">
         <strong id="user-display"></strong>
