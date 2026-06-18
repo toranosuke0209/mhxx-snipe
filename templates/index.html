@@ -123,6 +123,16 @@
     }
     .search-btn:hover { opacity: 0.85; }
     .search-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .or-add-btn {
+      width: 100%; background: none; border: 1px dashed var(--accent);
+      color: var(--accent); border-radius: 6px; padding: 5px 8px;
+      font-size: 0.82rem; cursor: pointer; margin-top: 6px; margin-bottom: 4px;
+    }
+    .or-add-btn:hover { background: var(--accent); color: #fff; }
+    .or-row { margin-top: 6px; padding: 8px; background: var(--bg2); border-radius: 8px; border-left: 3px solid var(--accent); }
+    .or-row-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .or-label { color: var(--accent); font-size: 0.78rem; font-weight: 700; }
+    .or-remove-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 1rem; padding: 0 4px; }
 
     .results-header {
       display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
@@ -484,6 +494,8 @@
       <select id="sp1" style="width:80px"></select>
       <span id="sp1-max" style="color:var(--text2);font-size:0.78rem"></span>
     </div>
+    <div id="skill1-or-list"></div>
+    <button class="or-add-btn" onclick="addSkillOr(1)">＋ OR条件追加</button>
 
     <div class="section-title">スキル2 (任意)</div>
     <div class="skill-combo" id="skill2-combo" data-sp="sp2" data-nullable="1"></div>
@@ -492,6 +504,8 @@
       <select id="sp2" style="width:80px"></select>
       <span id="sp2-max" style="color:var(--text2);font-size:0.78rem"></span>
     </div>
+    <div id="skill2-or-list"></div>
+    <button class="or-add-btn" onclick="addSkillOr(2)">＋ OR条件追加</button>
 
     <div class="section-title">スロット (最低)</div>
     <div class="btn-group" id="slot-group">
@@ -1176,6 +1190,9 @@ async function loadSkills() {
     ...data.skill2.map((s, i) => ({label: s, value: s, max: data.skill2_max[i]}))
   ];
 
+  window._skill1Opts = opts1;
+  window._skill2Opts = opts2;
+
   buildCombo('skill1-combo', opts1);
   buildCombo('skill2-combo', opts2);
   buildCombo('result-skill1-combo', opts1);
@@ -1333,6 +1350,55 @@ function renderResults(data) {
 let searchResults = [];
 function showSnipeByIdx(idx) { showSnipe(searchResults[idx]); }
 
+let _orCounter = 0;
+function addSkillOr(num) {
+  const id = _orCounter++;
+  const listEl = document.getElementById(`skill${num}-or-list`);
+  const comboId = `skill${num}-or-${id}`;
+  const spId = `sp${num}-or-${id}`;
+  const nullable = num === 2 ? 'data-nullable="1"' : '';
+  const div = document.createElement('div');
+  div.className = 'or-row';
+  div.id = `or-row-${id}-sk${num}`;
+  div.innerHTML = `
+    <div class="or-row-header">
+      <span class="or-label">OR</span>
+      <button class="or-remove-btn" onclick="removeSkillOr('${id}', ${num})">✕</button>
+    </div>
+    <div class="skill-combo" id="${comboId}" data-sp="${spId}" ${nullable}></div>
+    <div class="row">
+      <label>ポイント</label>
+      <select id="${spId}" style="width:80px"></select>
+    </div>`;
+  listEl.appendChild(div);
+  const opts = num === 1 ? window._skill1Opts : window._skill2Opts;
+  if (opts) buildCombo(comboId, opts);
+}
+
+function removeSkillOr(id, num) {
+  const el = document.getElementById(`or-row-${id}-sk${num}`);
+  if (el) el.remove();
+  const comboId = `skill${num}-or-${id}`;
+  if (skillCombos[comboId]?.el?._dropdown) skillCombos[comboId].el._dropdown.remove();
+  delete skillCombos[comboId];
+}
+
+function collectSkillConditions(num) {
+  const mainSkill = getComboValue(`skill${num}-combo`);
+  const mainSp = parseInt(document.getElementById(`sp${num}`).value) || 0;
+  const conditions = [{skill: mainSkill, sp: mainSp}];
+  const list = document.getElementById(`skill${num}-or-list`);
+  list.querySelectorAll('.or-row').forEach(row => {
+    const comboId = row.querySelector('.skill-combo')?.id;
+    const spId = row.querySelector('select')?.id;
+    if (!comboId || !spId) return;
+    const skill = getComboValue(comboId);
+    const sp = parseInt(document.getElementById(spId)?.value) || 0;
+    conditions.push({skill, sp});
+  });
+  return conditions;
+}
+
 async function doSearch() {
   const btn = document.getElementById('search-btn');
   const spinner = document.getElementById('spinner');
@@ -1341,31 +1407,41 @@ async function doSearch() {
   btn.disabled = true;
   spinner.classList.add('show');
 
-  const payload = {
+  const basePayload = {
     lang: currentLang, color: currentColor, mode: currentMode,
     seed: document.getElementById('seed').value.trim(),
     origin: document.getElementById('origin').value,
-    skill1: getComboValue('skill1-combo'),
-    sp1: parseInt(document.getElementById('sp1').value) || 0,
-    skill2: getComboValue('skill2-combo'),
-    sp2: parseInt(document.getElementById('sp2').value) || 0,
     slots: currentSlot,
     start: parseInt(document.getElementById('start').value) || 0,
     step: parseInt(document.getElementById('step').value) || 100000,
   };
 
+  const skill1Conds = collectSkillConditions(1);
+  const skill2Conds = collectSkillConditions(2);
+  const combos = [];
+  for (const s1 of skill1Conds) for (const s2 of skill2Conds) combos.push({s1, s2});
+
   try {
-    const res = await fetch('/api/search', {
+    const promises = combos.map(({s1, s2}) => fetch('/api/search', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (data.error) {
-      errorArea.innerHTML = `<div class="error-msg">⚠️ ${data.error}</div>`;
+      body: JSON.stringify({...basePayload, skill1: s1.skill, sp1: s1.sp, skill2: s2.skill, sp2: s2.sp}),
+    }).then(r => r.json()));
+
+    const all = await Promise.all(promises);
+    const errorMsg = all.find(d => d.error);
+    if (errorMsg) {
+      errorArea.innerHTML = `<div class="error-msg">⚠️ ${errorMsg.error}</div>`;
     } else {
-      searchResults = data.results;
-      renderResults(data);
+      const seen = new Set();
+      const merged = [];
+      for (const d of all) for (const r of (d.results || [])) {
+        if (!seen.has(r.frame)) { seen.add(r.frame); merged.push(r); }
+      }
+      merged.sort((a, b) => a.frame - b.frame);
+      const cached = all.some(d => d.cached);
+      searchResults = merged;
+      renderResults({results: merged, count: merged.length, cached});
     }
   } catch (e) {
     errorArea.innerHTML = `<div class="error-msg">⚠️ 通信エラー: ${e.message}</div>`;
