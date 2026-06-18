@@ -404,20 +404,20 @@
     .account-modal button { width:100%; }
 
     /* ── User chip in header ── */
-    .user-chip { font-size:0.8rem; color:var(--text2); display:flex; align-items:center; gap:6px; }
+    .user-chip { font-size:0.8rem; color:var(--text2); display:flex; align-items:center; gap:6px; white-space:nowrap; }
     .user-chip strong { color:var(--text); }
     .user-chip a { color:var(--accent); text-decoration:none; font-size:0.75rem; cursor:pointer; }
     .user-chip a:hover { text-decoration:underline; }
 
     /* ── Nav tabs ── */
-    .nav-tabs { display:flex; gap:4px; }
+    .nav-tabs { display:flex; gap:4px; white-space:nowrap; }
     .nav-tab {
       background: none; border: none; color: var(--text2); font-size: 0.85rem;
       padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all 0.15s;
     }
     .nav-tab:hover { background: var(--surface2); color: var(--text); }
     .nav-tab.active { background: var(--accent); color: #fff; font-weight: 700; }
-    @media (max-width: 700px) { .nav-tab { padding: 6px 10px; font-size: 0.78rem; } }
+    @media (max-width: 700px) { .nav-tab { padding: 5px 8px; font-size: 0.75rem; white-space: nowrap; } }
 
     /* ── Favorites screen ── */
     .fav-screen { padding: 24px; max-width: 900px; margin: 0 auto; }
@@ -442,7 +442,7 @@
     <div class="header-right">
       <nav class="nav-tabs">
         <button class="nav-tab active" id="nav-search" onclick="showSearch()">🔍 検索</button>
-        <button class="nav-tab" id="nav-favs" onclick="showFavs()">★ お気に入り</button>
+        <button class="nav-tab" id="nav-favs" onclick="showFavs()">★ お気に入</button>
       </nav>
       <div class="user-chip" id="user-chip">
         <strong id="user-display"></strong>
