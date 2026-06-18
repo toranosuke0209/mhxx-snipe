@@ -41,7 +41,7 @@ def _read_count_from_region(bw):
     chars = [
         (stats[i][0], stats[i][1], stats[i][2], stats[i][3], stats[i][4])
         for i in range(1, num_labels)
-        if stats[i][4] > 200 and stats[i][3] > 20
+        if stats[i][4] > 50 and stats[i][3] > 10
     ]
     chars.sort(key=lambda c: c[0])
     top_chars = [c for c in chars if c[1] < bw.shape[0] * 0.6]
