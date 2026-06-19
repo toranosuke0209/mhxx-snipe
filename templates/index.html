@@ -1910,17 +1910,16 @@ async function requestNotifPermission() {
     return;
   }
   const result = await Notification.requestPermission();
+  updateNotifBtn(result);
   if (result === 'granted') {
-    statusEl.textContent = '購読中...';
     try {
       await _subscribePush();
       statusEl.textContent = '✅ 購読完了！タイマー開始で通知が届きます';
     } catch(e) {
-      statusEl.textContent = '❌ エラー: ' + e.message;
+      statusEl.textContent = '❌ エラー: ' + (e.message || String(e));
       console.error('push subscribe failed', e);
     }
   }
-  updateNotifBtn(result);
 }
 
 function updateNotifBtn(perm) {
