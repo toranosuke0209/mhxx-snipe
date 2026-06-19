@@ -2367,56 +2367,39 @@ function videoLoadFirstFrame() {
   if (!file) return;
   const errEl = document.getElementById('video-error');
   errEl.textContent = '';
-
   const spinner = document.getElementById('video-spinner');
   spinner.classList.add('show');
 
-  const videoEl = document.createElement('video');
-  videoEl.muted = true;
-  videoEl.playsInline = true;
-  videoEl.preload = 'metadata';
-  const objUrl = URL.createObjectURL(file);
-  videoEl.src = objUrl;
+  const fd = new FormData();
+  fd.append('video', file);
 
-  function drawFirstFrame() {
-    try {
-      const tmpCanvas = document.createElement('canvas');
-      tmpCanvas.width  = videoEl.videoWidth;
-      tmpCanvas.height = videoEl.videoHeight;
-      tmpCanvas.getContext('2d').drawImage(videoEl, 0, 0);
-      const dataUrl = tmpCanvas.toDataURL('image/jpeg', 0.85);
-
-      videoNativeW = videoEl.videoWidth;
-      videoNativeH = videoEl.videoHeight;
-
-      const img = document.getElementById('video-preview-img');
-      img.src = dataUrl;
-      img.onload = () => {
-        const canvas = document.getElementById('video-region-canvas');
-        canvas.width  = img.offsetWidth;
-        canvas.height = img.offsetHeight;
-      };
-      document.getElementById('video-region-area').style.display = '';
-      videoRegion = null;
-      document.getElementById('video-analyze-btn').disabled = true;
-      document.getElementById('video-region-hint').textContent = '未選択';
-    } catch(e) {
-      errEl.textContent = '⚠️ ' + e.message;
-    } finally {
-      spinner.classList.remove('show');
-      URL.revokeObjectURL(objUrl);
-    }
-  }
-
-  // loadeddata で最初のフレームが利用可能になる。
-  // currentTime=0 → seeked はiOSで発火しないため loadeddata で直接描画する。
-  videoEl.addEventListener('loadeddata', drawFirstFrame, {once: true});
-
-  videoEl.addEventListener('error', () => {
-    errEl.textContent = '⚠️ 動画の読み込みに失敗しました';
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/video_frame');
+  xhr.onload = () => {
     spinner.classList.remove('show');
-    URL.revokeObjectURL(objUrl);
-  }, {once: true});
+    let data;
+    try { data = JSON.parse(xhr.responseText); } catch(e) { errEl.textContent = '⚠️ レスポンス解析エラー'; return; }
+    if (data.error) { errEl.textContent = '⚠️ ' + data.error; return; }
+
+    const img = document.getElementById('video-preview-img');
+    img.src = data.image;
+    videoNativeW = data.width;
+    videoNativeH = data.height;
+    img.onload = () => {
+      const canvas = document.getElementById('video-region-canvas');
+      canvas.width  = img.offsetWidth;
+      canvas.height = img.offsetHeight;
+    };
+    document.getElementById('video-region-area').style.display = '';
+    videoRegion = null;
+    document.getElementById('video-analyze-btn').disabled = true;
+    document.getElementById('video-region-hint').textContent = '未選択';
+  };
+  xhr.onerror = () => {
+    spinner.classList.remove('show');
+    errEl.textContent = '⚠️ 動画の読み込みに失敗しました';
+  };
+  xhr.send(fd);
 }
 
 function regionStart(e) {
