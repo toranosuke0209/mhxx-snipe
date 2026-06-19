@@ -296,6 +296,11 @@
       .btn { padding: 10px 8px; font-size: 0.85rem; }
       select, input[type=text], input[type=number] { font-size: 1rem; padding: 9px 10px; }
       .search-btn { padding: 14px; font-size: 1.05rem; }
+      .search-btn-wrap {
+        position: sticky; bottom: 76px; z-index: 50;
+        background: var(--surface); padding: 10px 0 4px;
+        border-top: 1px solid var(--border); margin: 0 -14px; padding: 10px 14px 4px;
+      }
 
       /* 結果テーブル → カード形式 */
       .results-table thead { display: none; }
@@ -603,6 +608,7 @@
       <div class="mode-tab active" onclick="setMode('exact')">完全一致</div>
       <div class="mode-tab" onclick="setMode('greater')">以上検索</div>
     </div>
+    <p style="font-size:0.72rem;color:var(--text2);margin:4px 0 8px">完全一致: 指定ポイントぴったり／以上検索: 指定ポイント以上</p>
 
     <div class="section-title">スキル1</div>
     <div class="skill-combo" id="skill1-combo" data-sp="sp1"></div>
@@ -612,7 +618,7 @@
       <span id="sp1-max" style="color:var(--text2);font-size:0.78rem"></span>
     </div>
     <div id="skill1-or-list"></div>
-    <button class="or-add-btn" onclick="addSkillOr(1)">＋ OR条件追加</button>
+    <button class="or-add-btn" onclick="addSkillOr(1)" title="このスキル以外も同時に検索できます">＋ OR条件追加</button>
 
     <div class="section-title">スキル2 (任意)</div>
     <div class="skill-combo" id="skill2-combo" data-sp="sp2" data-nullable="1"></div>
@@ -642,13 +648,15 @@
       <input type="number" id="step" value="500000" min="1000" max="10000000">
     </div>
 
-    <button class="search-btn" id="search-btn" onclick="doSearch()">🔍 検索</button>
-    <div id="admin-search-area" style="display:none">
-      <button class="search-btn" id="hunt-btn" onclick="startHunt()" style="margin-top:8px;background:var(--red,#c0392b)">🎯 見つかるまで探す</button>
-      <button id="hunt-cancel-btn" onclick="cancelHunt()" style="display:none;width:100%;margin-top:6px;background:none;border:1px solid var(--text2);color:var(--text2);border-radius:8px;padding:10px;cursor:pointer;font-size:0.9rem">⏹ 中止</button>
-      <div id="hunt-progress" style="display:none;margin-top:8px;font-size:0.82rem;color:var(--text2);text-align:center"></div>
+    <div class="search-btn-wrap">
+      <button class="search-btn" id="search-btn" onclick="doSearch()">🔍 検索</button>
+      <div id="admin-search-area" style="display:none">
+        <button class="search-btn" id="hunt-btn" onclick="startHunt()" style="margin-top:8px;background:var(--red,#c0392b)">🎯 見つかるまで探す</button>
+        <button id="hunt-cancel-btn" onclick="cancelHunt()" style="display:none;width:100%;margin-top:6px;background:none;border:1px solid var(--text2);color:var(--text2);border-radius:8px;padding:10px;cursor:pointer;font-size:0.9rem">⏹ 中止</button>
+        <div id="hunt-progress" style="display:none;margin-top:8px;font-size:0.82rem;color:var(--text2);text-align:center"></div>
+      </div>
+      <div class="spinner" id="spinner">検索中...</div>
     </div>
-    <div class="spinner" id="spinner">検索中...</div>
 
   </aside>
 
@@ -1597,7 +1605,7 @@ function restoreSkillConditions(num, conditions) {
       const spId = `sp${num}`;
       if (skillCombos[comboId]) skillCombos[comboId].selected = {value: cond.skill};
       buildCombo(comboId, opts);
-      setTimeout(() => { const sel = document.getElementById(spId); if (sel) sel.value = cond.sp; }, 50);
+      requestAnimationFrame(() => { const sel = document.getElementById(spId); if (sel) sel.value = cond.sp; });
     } else {
       // add OR row then restore value
       const id = _orCounter++;
@@ -1617,7 +1625,7 @@ function restoreSkillConditions(num, conditions) {
       list.appendChild(div);
       skillCombos[comboId] = {selected: {value: cond.skill}};
       buildCombo(comboId, opts);
-      setTimeout(() => { const sel = document.getElementById(spId); if (sel) sel.value = cond.sp; }, 50);
+      requestAnimationFrame(() => { const sel = document.getElementById(spId); if (sel) sel.value = cond.sp; });
     }
   });
 }
