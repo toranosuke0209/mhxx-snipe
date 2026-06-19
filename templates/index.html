@@ -1871,7 +1871,7 @@ async function _subscribePush() {
   dbg('SW取得中...');
   let reg = await navigator.serviceWorker.getRegistration('/');
   if (!reg) {
-    reg = await navigator.serviceWorker.register('/static/sw.js', { scope: '/' });
+    reg = await navigator.serviceWorker.register('/static/sw.js');
     await new Promise(r => setTimeout(r, 1000));
   }
   if (!reg) throw new Error('SW登録失敗');
