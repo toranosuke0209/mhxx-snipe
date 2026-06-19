@@ -2362,40 +2362,61 @@ let videoNativeW = 1, videoNativeH = 1;  // 動画の実解像度
 let videoRegion = null;   // {x, y, w, h} (実解像度座標)
 let regionDrag  = null;   // ドラッグ中の状態
 
-async function videoLoadFirstFrame() {
+function videoLoadFirstFrame() {
   const file = document.getElementById('video-file').files[0];
   if (!file) return;
   const errEl = document.getElementById('video-error');
   errEl.textContent = '';
 
-  const fd = new FormData();
-  fd.append('video', file);
-
   const spinner = document.getElementById('video-spinner');
   spinner.classList.add('show');
-  try {
-    const res  = await fetch('/api/video_frame', {method: 'POST', body: fd});
-    const data = await res.json();
-    if (data.error) { errEl.textContent = '⚠️ ' + data.error; return; }
 
-    const img = document.getElementById('video-preview-img');
-    img.src = data.image;
-    videoNativeW = data.width;
-    videoNativeH = data.height;
-    img.onload = () => {
-      const canvas = document.getElementById('video-region-canvas');
-      canvas.width  = img.offsetWidth;
-      canvas.height = img.offsetHeight;
-    };
-    document.getElementById('video-region-area').style.display = '';
-    videoRegion = null;
-    document.getElementById('video-analyze-btn').disabled = true;
-    document.getElementById('video-region-hint').textContent = '未選択';
-  } catch(e) {
-    errEl.textContent = '⚠️ ' + e.message;
-  } finally {
+  const videoEl = document.createElement('video');
+  videoEl.muted = true;
+  videoEl.playsInline = true;
+  videoEl.preload = 'metadata';
+  const objUrl = URL.createObjectURL(file);
+  videoEl.src = objUrl;
+
+  videoEl.addEventListener('loadeddata', () => {
+    videoEl.currentTime = 0;
+  }, {once: true});
+
+  videoEl.addEventListener('seeked', () => {
+    try {
+      const tmpCanvas = document.createElement('canvas');
+      tmpCanvas.width  = videoEl.videoWidth;
+      tmpCanvas.height = videoEl.videoHeight;
+      tmpCanvas.getContext('2d').drawImage(videoEl, 0, 0);
+      const dataUrl = tmpCanvas.toDataURL('image/jpeg', 0.85);
+
+      videoNativeW = videoEl.videoWidth;
+      videoNativeH = videoEl.videoHeight;
+
+      const img = document.getElementById('video-preview-img');
+      img.src = dataUrl;
+      img.onload = () => {
+        const canvas = document.getElementById('video-region-canvas');
+        canvas.width  = img.offsetWidth;
+        canvas.height = img.offsetHeight;
+      };
+      document.getElementById('video-region-area').style.display = '';
+      videoRegion = null;
+      document.getElementById('video-analyze-btn').disabled = true;
+      document.getElementById('video-region-hint').textContent = '未選択';
+    } catch(e) {
+      errEl.textContent = '⚠️ ' + e.message;
+    } finally {
+      spinner.classList.remove('show');
+      URL.revokeObjectURL(objUrl);
+    }
+  }, {once: true});
+
+  videoEl.addEventListener('error', () => {
+    errEl.textContent = '⚠️ 動画の読み込みに失敗しました';
     spinner.classList.remove('show');
-  }
+    URL.revokeObjectURL(objUrl);
+  }, {once: true});
 }
 
 function regionStart(e) {
@@ -2459,7 +2480,7 @@ function regionEnd(e) {
   document.getElementById('video-analyze-btn').disabled = false;
 }
 
-async function videoAnalyze() {
+function videoAnalyze() {
   if (!videoRegion) return;
   const file = document.getElementById('video-file').files[0];
   if (!file) return;
@@ -2476,23 +2497,22 @@ async function videoAnalyze() {
   fd.append('w', videoRegion.w);
   fd.append('h', videoRegion.h);
 
-  try {
-    const res  = await fetch('/api/video_analyze', {method: 'POST', body: fd});
-    const data = await res.json();
-    if (data.error) {
-      errEl.textContent = '⚠️ ' + data.error + (data.todo ? '（テンプレート未実装）' : '');
-      return;
-    }
+  // fetch() + FormData + File が iOS Safari で失敗するため XMLHttpRequest を使用
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/video_analyze');
+  xhr.onload = () => {
+    spinner.classList.remove('show');
+    document.getElementById('video-analyze-btn').disabled = false;
+    let data;
+    try { data = JSON.parse(xhr.responseText); } catch(e) { errEl.textContent = '⚠️ レスポンス解析エラー'; return; }
+    if (data.error) { errEl.textContent = '⚠️ ' + data.error + (data.todo ? '（テンプレート未実装）' : ''); return; }
     document.getElementById('sn-combo-str').value = data.combo_str;
-
-    // 差分チェック
     const counts = data.counts;
     const badSteps = [];
     for (let i = 1; i < counts.length; i++) {
       const diff = counts[i] - counts[i - 1];
       if (diff < 2 || diff > 4) badSteps.push(`${counts[i-1]}→${counts[i]}(+${diff})`);
     }
-
     if (badSteps.length > 0) {
       errEl.style.color = '#f87';
       errEl.textContent = `⚠️ 異常な増加を検出: ${badSteps.join(', ')} — 領域を確認してください`;
@@ -2503,12 +2523,13 @@ async function videoAnalyze() {
       doComboSearch();
     }
     setTimeout(() => { errEl.textContent = ''; errEl.style.color = ''; }, 4000);
-  } catch(e) {
-    errEl.textContent = '⚠️ ' + e.message;
-  } finally {
+  };
+  xhr.onerror = () => {
     spinner.classList.remove('show');
     document.getElementById('video-analyze-btn').disabled = false;
-  }
+    errEl.textContent = '⚠️ 通信エラー';
+  };
+  xhr.send(fd);
 }
 </script>
 <script>
