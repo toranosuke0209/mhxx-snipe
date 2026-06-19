@@ -496,18 +496,18 @@
 
     /* ── Mobile overrides ── */
     @media (max-width: 700px) {
-      body { padding-bottom: 62px; }
+      body { padding-bottom: 76px; }
 
       .bottom-nav {
         display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
-        background: var(--surface); border-top: 1px solid var(--border); height: 62px;
+        background: var(--surface); border-top: 1px solid var(--border); height: 76px;
       }
       .bottom-tab {
         flex: 1; display: flex; flex-direction: column; align-items: center;
-        justify-content: center; gap: 3px; color: var(--text2);
-        font-size: 0.65rem; background: none; border: none; cursor: pointer; padding: 4px 0;
+        justify-content: center; gap: 4px; color: var(--text2);
+        font-size: 0.75rem; background: none; border: none; cursor: pointer; padding: 6px 0;
       }
-      .bottom-tab-icon { font-size: 1.35rem; line-height: 1; }
+      .bottom-tab-icon { font-size: 1.6rem; line-height: 1; }
       .bottom-tab.active { color: var(--accent); }
 
       .nav-tabs { display: none; }
@@ -516,7 +516,7 @@
       .snipe-layout { padding: 10px 10px 0; gap: 10px; }
 
       .timer-bar {
-        position: fixed; bottom: 62px; left: 0; right: 0; z-index: 100;
+        position: fixed; bottom: 76px; left: 0; right: 0; z-index: 100;
         background: rgba(26,26,46,0.97); border-top: 1px solid var(--border);
         padding: 8px 12px; backdrop-filter: blur(6px);
         max-width: 100%;
@@ -593,11 +593,11 @@
     <!-- ── CHARM SEARCH PANEL ── -->
     <input type="hidden" id="seed" value="">
 
-    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
-      検索プリセット
-      <button class="or-add-btn" style="width:auto;margin:0;padding:3px 10px" onclick="savePreset()">💾 保存</button>
-    </div>
-    <div id="preset-list" style="margin-bottom:8px"></div>
+    <button class="section-title preset-toggle" onclick="togglePresetPanel()" style="display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;cursor:pointer;padding:0;color:inherit;font:inherit">
+      <span>検索プリセット <span id="preset-chevron" style="font-size:0.8em;color:var(--text2)">▶</span></span>
+      <span class="or-add-btn" style="width:auto;margin:0;padding:3px 10px" onclick="event.stopPropagation();savePreset()">💾 保存</span>
+    </button>
+    <div id="preset-list" style="margin-bottom:8px;display:none"></div>
 
     <div class="section-title">入手方法</div>
     <div class="row"><select id="origin"></select></div>
@@ -964,6 +964,14 @@ function showSnipeTab() {
 
 function togglePanel(id) {
   document.getElementById(id).classList.toggle('open');
+}
+
+function togglePresetPanel() {
+  const list = document.getElementById('preset-list');
+  const chevron = document.getElementById('preset-chevron');
+  const open = list.style.display !== 'none';
+  list.style.display = open ? 'none' : '';
+  chevron.textContent = open ? '▶' : '▼';
 }
 
 function showSearch() {
