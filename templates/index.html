@@ -658,6 +658,13 @@
     <button class="ctrl-btn start" id="sn-timer-btn" onclick="snTimerToggle()">▶ スタート</button>
     <button class="ctrl-btn" onclick="snTimerReset()">↺ リセット</button>
   </div>
+  <div style="margin-top:8px;text-align:center">
+    <button id="notif-btn" onclick="requestNotifPermission()"
+      style="background:none;border:1px solid var(--text2);color:var(--text2);border-radius:6px;padding:5px 14px;font-size:0.78rem;cursor:pointer">
+      🔔 通知を有効にする
+    </button>
+    <div id="notif-status" style="font-size:0.72rem;color:var(--text2);margin-top:3px"></div>
+  </div>
 
   <!-- Current frame override -->
   <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
@@ -1836,6 +1843,58 @@ function snTimerTick() {
   }
 }
 
+// ─── Push Notification ────────────────────────────────────
+const NOTIF_ADVANCE_FRAMES = 900; // 30秒前（30fps×30秒）
+let _notifTimer = null;
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) {
+    document.getElementById('notif-status').textContent = 'このブラウザは通知非対応です';
+    return;
+  }
+  const result = await Notification.requestPermission();
+  updateNotifBtn(result);
+}
+
+function updateNotifBtn(perm) {
+  const btn    = document.getElementById('notif-btn');
+  const status = document.getElementById('notif-status');
+  if (!btn) return;
+  if (perm === 'granted') {
+    btn.textContent = '🔔 通知ON';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.color = 'var(--accent)';
+    status.textContent = '目標30秒前に通知します';
+  } else if (perm === 'denied') {
+    btn.textContent = '🔕 通知ブロック中';
+    status.textContent = 'ブラウザ設定から許可してください';
+  } else {
+    btn.textContent = '🔔 通知を有効にする';
+    status.textContent = '';
+  }
+}
+
+function snScheduleNotification() {
+  snCancelNotification();
+  if (Notification.permission !== 'granted') return;
+  const remain = snTarget - snFrame - NOTIF_ADVANCE_FRAMES;
+  if (remain <= 0) return;
+  const delayMs = remain * MS_PER_FRAME;
+  _notifTimer = setTimeout(async () => {
+    const reg = await navigator.serviceWorker.ready;
+    reg.showNotification('🎯 まもなく目標フレーム！', {
+      body: `あと30秒（${NOTIF_ADVANCE_FRAMES}F）で目標フレーム ${snTarget.toLocaleString()} Fです`,
+      icon: '/static/icon-192.png',
+      tag: 'snipe-alert',
+      requireInteraction: true,
+    });
+  }, delayMs);
+}
+
+function snCancelNotification() {
+  if (_notifTimer) { clearTimeout(_notifTimer); _notifTimer = null; }
+}
+
 function snTimerToggle() {
   const btn = document.getElementById('sn-timer-btn');
   if (snRunning) {
@@ -1845,11 +1904,13 @@ function snTimerToggle() {
     btn.textContent = '⏸ 停止';
     btn.className = 'ctrl-btn stop';
     snInterval = setInterval(snTimerTick, MS_PER_FRAME);
+    snScheduleNotification();
   }
 }
 function snTimerStop() {
   clearInterval(snInterval);
   snRunning = false;
+  snCancelNotification();
   const btn = document.getElementById('sn-timer-btn');
   if (btn) { btn.textContent = '▶ スタート'; btn.className = 'ctrl-btn start'; }
 }
@@ -2037,6 +2098,7 @@ function changeUsername() {
 loadSkills();
 initAccount();
 showAdminFeatures();
+if ('Notification' in window) updateNotifBtn(Notification.permission);
 renderFavs();
 loadPresets();
 loadOffsetHistory();
