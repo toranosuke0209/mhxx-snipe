@@ -591,14 +591,6 @@
   <aside class="sidebar">
 
     <!-- ── CHARM SEARCH PANEL ── -->
-    <div class="section-title">お守りカラー</div>
-    <div class="btn-group">
-      <button class="btn blue active"   id="color-blue"   onclick="setColor('blue')">風化 Blue</button>
-      <button class="btn red"           id="color-red"    onclick="setColor('red')">古び Red</button>
-      <button class="btn yellow"        id="color-yellow" onclick="setColor('yellow')">光る Yellow</button>
-      <button class="btn white"         id="color-white"  onclick="setColor('white')">なぞ White</button>
-    </div>
-
     <input type="hidden" id="seed" value="">
 
     <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
@@ -1381,12 +1373,7 @@ async function loadSkills() {
 
 function updateSpMax() {} // kept for compat — no longer used directly
 
-function setColor(color) {
-  currentColor = color;
-  document.querySelectorAll('[id^=color-]').forEach(b => b.classList.remove('active'));
-  document.getElementById('color-' + color).classList.add('active');
-  loadSkills();
-}
+function setColor(color) {}
 function setMode(mode) {
   currentMode = mode;
   document.querySelectorAll('.mode-tab').forEach((t, i) =>
