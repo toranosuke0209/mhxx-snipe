@@ -1873,7 +1873,7 @@ async function _subscribePush() {
     sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
   }
   _pushSubscription = sub;
-  const username = document.getElementById('username-input')?.value || 'anonymous';
+  const username = getUsername();
   await fetch('/api/push/subscribe', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1917,7 +1917,7 @@ async function snScheduleNotification() {
   const remain = snTarget - snFrame - NOTIF_ADVANCE_FRAMES;
   if (remain <= 0) return;
   const delaySec = remain * MS_PER_FRAME / 1000;
-  const username = document.getElementById('username-input')?.value || 'anonymous';
+  const username = getUsername();
   try {
     await _subscribePush();
     await fetch('/api/push/schedule', {
@@ -1929,7 +1929,7 @@ async function snScheduleNotification() {
 }
 
 async function snCancelNotification() {
-  const username = document.getElementById('username-input')?.value || 'anonymous';
+  const username = getUsername();
   try {
     await fetch('/api/push/cancel', {
       method: 'POST',
