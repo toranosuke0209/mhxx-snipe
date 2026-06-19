@@ -2359,7 +2359,8 @@ async function videoAnalyze() {
     }
     document.getElementById('sn-combo-str').value = data.combo_str;
     errEl.style.color = '#6f6';
-    errEl.textContent = `✔ ${data.counts.length}件検出 → テキストエリアに入力しました`;
+    errEl.textContent = `✔ ${data.counts.length}件検出 → 自動検索中...`;
+    doComboSearch();
     setTimeout(() => { errEl.textContent = ''; errEl.style.color = ''; }, 4000);
   } catch(e) {
     errEl.textContent = '⚠️ ' + e.message;
