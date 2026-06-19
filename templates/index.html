@@ -1865,20 +1865,25 @@ async function _getVapidKey() {
 }
 
 async function _subscribePush() {
-  if (!('PushManager' in window)) return null;
+  if (!('PushManager' in window)) throw new Error('PushManager未対応');
   const reg = await navigator.serviceWorker.ready;
   let sub = await reg.pushManager.getSubscription();
   if (!sub) {
     const key = await _getVapidKey();
-    sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+    // タイムアウト付きsubscribe（iOSでハング対策）
+    sub = await Promise.race([
+      reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('subscribe timeout (15s)')), 15000)),
+    ]);
   }
   _pushSubscription = sub;
   const username = getUsername();
-  await fetch('/api/push/subscribe', {
+  const res = await fetch('/api/push/subscribe', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, subscription: sub.toJSON() }),
   });
+  if (!res.ok) throw new Error('サーバー登録失敗: ' + res.status);
   return sub;
 }
 
