@@ -1868,11 +1868,13 @@ async function _subscribePush() {
   const st = document.getElementById('notif-status');
   const dbg = s => { if (st) st.textContent = s; console.log('[push]', s); };
   if (!('PushManager' in window)) throw new Error('PushManager未対応');
-  dbg('SW待機中...');
-  const reg = await Promise.race([
-    navigator.serviceWorker.ready,
-    new Promise((_, rej) => setTimeout(() => rej(new Error('SW ready timeout')), 10000)),
-  ]);
+  dbg('SW取得中...');
+  let reg = await navigator.serviceWorker.getRegistration('/');
+  if (!reg) {
+    reg = await navigator.serviceWorker.register('/static/sw.js', { scope: '/' });
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  if (!reg) throw new Error('SW登録失敗');
   dbg('既存サブスク確認中...');
   let sub = await reg.pushManager.getSubscription();
   if (!sub) {
