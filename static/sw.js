@@ -1,4 +1,4 @@
-const CACHE = 'mhxx-v2';
+const CACHE = 'mhxx-v3';
 const PRECACHE = ['/'];
 
 self.addEventListener('install', e => {

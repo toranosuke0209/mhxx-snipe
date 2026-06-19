@@ -2539,8 +2539,16 @@ async function videoAnalyze() {
     // ページ読み込み時に既存のPush購読を復元
     if ('PushManager' in window && Notification.permission === 'granted') {
       navigator.serviceWorker.getRegistration('/static/sw.js').then(reg => {
-        if (reg) reg.pushManager.getSubscription().then(sub => {
-          if (sub) _pushSubscription = sub;
+        if (!reg) return;
+        reg.pushManager.getSubscription().then(async sub => {
+          if (!sub) return;
+          _pushSubscription = sub;
+          const username = getUsername();
+          await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, subscription: sub.toJSON() }),
+          }).catch(() => {});
         });
       });
     }
