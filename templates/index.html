@@ -433,6 +433,113 @@
     .fav-screen { padding: 24px; max-width: 900px; margin: 0 auto; }
     .fav-screen-header { margin-bottom: 20px; }
     .fav-screen-header h2 { font-size: 1.2rem; font-weight: 700; }
+
+    /* ── New Panel System ── */
+    .panel {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden; width: 100%; max-width: 700px;
+    }
+    .panel-header {
+      display: flex; align-items: center; gap: 8px; padding: 14px 18px;
+      cursor: pointer; background: none; border: none; width: 100%;
+      text-align: left; color: var(--text); font-weight: 700; font-size: 0.9rem;
+      transition: background 0.15s;
+    }
+    .panel-header:hover { background: rgba(255,255,255,0.04); }
+    .panel-title { flex: 1; }
+    .panel-badge { font-size: 0.82rem; color: var(--accent); font-family: monospace; }
+    .panel-chevron { color: var(--text2); font-size: 0.7rem; transition: transform 0.2s; }
+    .panel.open .panel-chevron { transform: rotate(180deg); }
+    .panel-body { display: none; padding: 0 18px 16px; }
+    .panel.open .panel-body { display: block; }
+    .panel-hint { font-size: 0.78rem; color: var(--text2); margin-bottom: 12px; line-height: 1.7; }
+
+    /* ── Snipe Layout ── */
+    .snipe-layout {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 16px; gap: 14px; min-height: calc(100vh - 53px);
+    }
+    .counter-block { text-align: center; width: 100%; max-width: 700px; padding: 8px 0; }
+    .near-inline { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+    .near-inline-label { font-size: 0.78rem; color: var(--text2); }
+    .near-val { color: var(--green); font-family: monospace; font-weight: 700; font-size: 1.6rem; }
+    .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 700px; }
+    .quick-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
+    .info-label { font-size: 0.68rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+    .trial-ctrl { display: flex; align-items: center; gap: 8px; }
+    .trial-minus { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 5px 14px; font-size: 1rem; cursor: pointer; }
+    .trial-plus { background: var(--accent); border: none; color: #fff; border-radius: 6px; padding: 5px 14px; font-size: 1rem; cursor: pointer; font-weight: 700; }
+    .trial-num { font-family: monospace; font-size: 1.8rem; font-weight: 700; color: var(--accent); min-width: 2ch; text-align: center; }
+    .frame-set { display: flex; gap: 8px; }
+    .frame-set input { flex: 1; }
+    .frame-set button { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 6px 14px; font-weight: 700; cursor: pointer; white-space: nowrap; font-size: 0.85rem; }
+    .memo-bar { display: flex; gap: 8px; width: 100%; max-width: 700px; }
+    .memo-bar input { flex: 1; }
+    .fav-save-btn { background: var(--surface2); border: 1px solid var(--border); color: #f5c518; border-radius: 6px; padding: 7px 16px; font-size: 0.9rem; cursor: pointer; font-weight: 700; white-space: nowrap; }
+    .timer-bar { display: flex; gap: 12px; width: 100%; max-width: 700px; }
+    .timer-bar .ctrl-btn { flex: 1; }
+    .timer-spacer { display: none; }
+    .target-info-grid { display: flex; gap: 32px; flex-wrap: wrap; }
+    .continue-big { font-family: monospace; font-size: 2rem; font-weight: 700; color: var(--accent); }
+    .continue-sub { font-size: 0.8rem; color: var(--text2); margin: 4px 0 14px; }
+    .val-blue { color: var(--blue); font-family: monospace; }
+    .params-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 8px; }
+    .param-group label { font-size: 0.72rem; color: var(--text2); display: block; margin-bottom: 4px; }
+    .param-calc-text { font-size: 0.75rem; color: var(--text2); }
+    .craft-ctrl { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .craft-result { font-size: 0.85rem; color: var(--text2); }
+    .action-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 7px 18px; font-size: 0.9rem; cursor: pointer; font-weight: 700; }
+    .beat-count { font-family: monospace; font-size: 1.4rem; font-weight: 700; color: var(--yellow); margin: 8px 0; text-align: center; }
+
+    /* ── Bottom Nav (mobile only) ── */
+    .bottom-nav { display: none; }
+
+    /* ── Mobile overrides ── */
+    @media (max-width: 700px) {
+      body { padding-bottom: 62px; }
+
+      .bottom-nav {
+        display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+        background: var(--surface); border-top: 1px solid var(--border); height: 62px;
+      }
+      .bottom-tab {
+        flex: 1; display: flex; flex-direction: column; align-items: center;
+        justify-content: center; gap: 3px; color: var(--text2);
+        font-size: 0.65rem; background: none; border: none; cursor: pointer; padding: 4px 0;
+      }
+      .bottom-tab-icon { font-size: 1.35rem; line-height: 1; }
+      .bottom-tab.active { color: var(--accent); }
+
+      .nav-tabs { display: none; }
+      header .user-chip { font-size: 0.72rem; }
+
+      .snipe-layout { padding: 10px 10px 0; gap: 10px; }
+
+      .timer-bar {
+        position: fixed; bottom: 62px; left: 0; right: 0; z-index: 100;
+        background: rgba(26,26,46,0.97); border-top: 1px solid var(--border);
+        padding: 8px 12px; backdrop-filter: blur(6px);
+        max-width: 100%;
+      }
+      .timer-spacer { display: block; height: 68px; }
+
+      .counter-block .counter-current { font-size: 3.5rem; }
+      .near-val { font-size: 1.2rem; }
+
+      .panel { max-width: 100%; }
+      .panel-header { padding: 11px 14px; font-size: 0.85rem; }
+      .panel-body { padding: 0 14px 14px; }
+
+      .quick-grid { gap: 8px; }
+      .quick-card { padding: 10px 12px; }
+      .trial-num { font-size: 1.5rem; }
+      .trial-minus, .trial-plus { padding: 4px 12px; }
+
+      .params-grid { gap: 6px; }
+      .continue-big { font-size: 1.6rem; }
+
+      .target-info-grid { gap: 16px; }
+    }
   </style>
 </head>
 <body>
@@ -461,6 +568,22 @@
     </div>
   </div>
 </header>
+
+<!-- Bottom Navigation (mobile only) -->
+<nav class="bottom-nav">
+  <button class="bottom-tab active" data-nav="search" onclick="showSearch()">
+    <span class="bottom-tab-icon">🔍</span>
+    <span>検索</span>
+  </button>
+  <button class="bottom-tab" data-nav="snipe" onclick="showSnipeTab()">
+    <span class="bottom-tab-icon">⏱</span>
+    <span>スナイプ</span>
+  </button>
+  <button class="bottom-tab" data-nav="favs" onclick="showFavs()">
+    <span class="bottom-tab-icon">★</span>
+    <span>お気に入り</span>
+  </button>
+</nav>
 
 <!-- ══════════ SCREEN: Search ══════════ -->
 <div class="screen active" id="screen-search">
@@ -576,157 +699,216 @@
 
 <!-- ══════════ SCREEN: Snipe ══════════ -->
 <div class="screen" id="screen-snipe">
-<div class="snipe-screen">
+<div class="snipe-layout">
 
-  <button onclick="showSearch()"
-    style="align-self:flex-start;background:var(--surface2);border:1px solid var(--border);
-           color:var(--text);border-radius:8px;padding:6px 16px;font-size:0.85rem;
-           cursor:pointer;margin-bottom:8px">
-    ← 検索に戻る
-  </button>
-
-  <!-- Target info -->
-  <div class="target-card">
-    <div>
-      <div class="label">目標フレーム</div>
-      <div class="target-frame-tag" id="sn-frame">—</div>
-      <div class="target-time-tag"  id="sn-time">—</div>
-    </div>
-    <div>
-      <div class="label">お守り</div>
-      <div class="target-skills" id="sn-charm">—</div>
-      <div class="target-rare"   id="sn-rare">—</div>
+  <!-- Target info (collapsible) -->
+  <div class="panel" id="panel-target">
+    <button class="panel-header" onclick="togglePanel('panel-target')">
+      <span class="panel-title">🎯 目標</span>
+      <span class="panel-badge" id="sn-frame-inline">—</span>
+      <span class="panel-chevron">▼</span>
+    </button>
+    <div class="panel-body">
+      <div class="target-info-grid">
+        <div>
+          <div class="info-label">フレーム</div>
+          <div class="target-frame-tag" id="sn-frame">—</div>
+          <div class="target-time-tag" id="sn-time">—</div>
+        </div>
+        <div>
+          <div class="info-label">お守り</div>
+          <div class="target-skills" id="sn-charm">—</div>
+          <div class="target-rare" id="sn-rare">—</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Big counter -->
-  <div class="counter-area">
-    <div class="counter-main">
-      <div class="counter-current" id="sn-current">0</div>
-      <div class="counter-time"    id="sn-current-time">0d 0h 0m 0s 0f</div>
-      <div class="counter-remain"  id="sn-remain">目標まで — F</div>
-    </div>
-    <div class="counter-near" id="sn-near-timer">
-      <div class="counter-near-label">1回押し後の残り</div>
-      <div class="counter-current" id="sn-near-current">—</div>
-      <div class="counter-time"    id="sn-near-time">—</div>
+  <!-- Main counter (always visible) -->
+  <div class="counter-block">
+    <div class="counter-current" id="sn-current">0</div>
+    <div class="counter-time" id="sn-current-time">0d 0h 0m 0s 0f</div>
+    <div class="counter-remain" id="sn-remain">目標まで — F</div>
+    <div class="near-inline" id="sn-near-timer">
+      <span class="near-inline-label">1回後:</span>
+      <span class="near-val" id="sn-near-current">—</span>
+      <span class="counter-time" id="sn-near-time"></span>
     </div>
   </div>
 
-  <!-- Trial counter + memo -->
-  <div style="margin:12px 0;padding:14px 20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
-    <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px">
-      <span style="font-size:0.78rem;color:var(--text2);white-space:nowrap">試行回数</span>
-      <button onclick="trialCount=Math.max(0,trialCount-1);updateTrialDisplay()"
-        style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 14px;font-size:1rem;cursor:pointer">－</button>
-      <span id="sn-trial" style="font-family:monospace;font-size:2rem;font-weight:700;color:var(--accent);min-width:2ch;text-align:center">0</span>
-      <button onclick="trialCount++;updateTrialDisplay()"
-        style="background:var(--accent);border:none;color:#fff;border-radius:6px;padding:4px 14px;font-size:1rem;cursor:pointer;font-weight:700">＋</button>
-      <span style="font-size:0.78rem;color:var(--text2)">回</span>
+  <!-- Quick actions -->
+  <div class="quick-grid">
+    <div class="quick-card">
+      <div class="info-label">試行回数</div>
+      <div class="trial-ctrl">
+        <button class="trial-minus" onclick="trialCount=Math.max(0,trialCount-1);updateTrialDisplay()">－</button>
+        <span class="trial-num" id="sn-trial">0</span>
+        <button class="trial-plus" onclick="trialCount++;updateTrialDisplay()">＋</button>
+      </div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <input type="text" id="sn-memo" placeholder="メモ（例: 3回で成功）"
-        style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:0.85rem">
-      <button onclick="saveFavFromSnipe()"
-        style="background:var(--surface2);border:1px solid var(--border);color:#f5c518;border-radius:6px;padding:7px 14px;font-size:0.9rem;cursor:pointer;white-space:nowrap;font-weight:700">★ 保存</button>
-    </div>
-  </div>
-
-  <!-- Craft time measurement -->
-  <div style="margin:8px 0;padding:12px 20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
-    <div style="font-size:0.78rem;color:var(--text2);margin-bottom:8px">調合時間計測（調合開始→終了で目標フレームを補正）</div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <button id="craft-measure-btn" onclick="craftMeasureToggle()"
-        style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 16px;font-size:0.9rem;cursor:pointer;font-weight:700">
-        ⏱ 調合開始
-      </button>
-      <span id="craft-measure-result" style="font-size:0.85rem;color:var(--text2)">—</span>
+    <div class="quick-card">
+      <div class="info-label">現在F セット</div>
+      <div class="frame-set">
+        <input type="number" id="sn-current-input" min="0" value="0" placeholder="0" onfocus="this.select()">
+        <button onclick="snSetCurrentFrame()">SET</button>
+      </div>
     </div>
   </div>
 
-  <!-- Timer buttons -->
-  <div class="workflow-steps">
-    <div class="wf-step"><span class="wf-num">①</span><span class="wf-text">調合開始と同時に<br><b>⏱ 調合開始</b></span></div>
-    <div class="wf-arrow">→</div>
-    <div class="wf-step"><span class="wf-num">②</span><span class="wf-text">ホームに戻ると同時に<br><b>⏹ 調合終了</b></span></div>
-    <div class="wf-arrow">→</div>
-    <div class="wf-step"><span class="wf-num">③</span><span class="wf-text">調合検索でフレーム特定<br><b>現在F セット</b></span></div>
-    <div class="wf-arrow">→</div>
-    <div class="wf-step"><span class="wf-num">④</span><span class="wf-text">再開とともに<br><b>▶ スタート</b></span></div>
+  <!-- Memo + save -->
+  <div class="memo-bar">
+    <input type="text" id="sn-memo" placeholder="メモ（例: 3回で成功）">
+    <button class="fav-save-btn" onclick="saveFavFromSnipe()">★ 保存</button>
   </div>
-  <div class="timer-controls">
+
+  <!-- Timer controls -->
+  <div class="timer-bar" id="timer-bar">
     <button class="ctrl-btn start" id="sn-timer-btn" onclick="snTimerToggle()">▶ スタート</button>
     <button class="ctrl-btn" onclick="snTimerReset()">↺ リセット</button>
   </div>
 
-  <!-- Current frame override -->
-  <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-    <span style="font-size:0.78rem;color:var(--text2);white-space:nowrap">③ 現在F</span>
-    <input type="number" id="sn-current-input" min="0" value="0"
-      style="width:110px;padding:5px 8px;font-size:0.85rem;font-family:monospace"
-      placeholder="0" onfocus="this.select()">
-    <button onclick="snSetCurrentFrame()"
-      style="background:var(--surface2);border:1px solid var(--border);color:var(--text);
-             border-radius:6px;padding:5px 14px;font-size:0.82rem;cursor:pointer;white-space:nowrap">
-      セット
+  <!-- ── コンテニュー計算 ── -->
+  <div class="panel" id="panel-continue">
+    <button class="panel-header" onclick="togglePanel('panel-continue')">
+      <span class="panel-title">🔢 コンテニュー計算</span>
+      <span class="panel-badge" id="sn-continue-count-badge"></span>
+      <span class="panel-chevron">▼</span>
     </button>
-    <span style="font-size:0.72rem;color:var(--text2)">← 調合検索で特定した調合開始フレームを入力</span>
-  </div>
-
-  <!-- Continue count -->
-  <div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;
-              background:var(--surface2);border:1px solid var(--border);border-radius:10px">
-    <div style="flex:1">
-      <div style="font-size:0.72rem;color:var(--text2);margin-bottom:2px">コンテニュー連打</div>
-      <div style="font-family:monospace;font-size:1.5rem;font-weight:700;color:var(--accent)" id="sn-continue-count">— 回</div>
-      <div style="font-size:0.72rem;color:var(--text2);margin-top:4px">1回押し後の残り待ち: <span id="sn-after-first" style="color:var(--blue);font-family:monospace">—</span></div>
-    </div>
-    <div style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text2);flex-wrap:wrap">
-      <span>遷移</span>
-      <input type="number" id="sn-fpc" value="700" min="1"
-        style="width:60px;padding:3px 6px;font-size:0.82rem;font-family:monospace"
-        oninput="snUpdateContinueCount()">
-      <span>F　BPM</span>
-      <input type="number" id="sn-bpm" value="80" min="1" max="999"
-        style="width:56px;padding:3px 6px;font-size:0.82rem;font-family:monospace"
-        oninput="snUpdateContinueCount()">
-      <span>　余裕</span>
-      <input type="number" id="sn-buffer" value="1800" min="0"
-        style="width:60px;padding:3px 6px;font-size:0.82rem;font-family:monospace"
-        oninput="snUpdateContinueCount()">
-      <span>F</span>
-      <div style="width:100%;margin-top:2px;color:var(--text2);font-size:0.75rem" id="sn-fpc-calc"></div>
+    <div class="panel-body">
+      <div class="continue-big" id="sn-continue-count">— 回</div>
+      <div class="continue-sub">1回押し後の残り: <span class="val-blue" id="sn-after-first">—</span></div>
+      <div class="params-grid">
+        <div class="param-group">
+          <label>遷移F</label>
+          <input type="number" id="sn-fpc" value="700" min="1" oninput="snUpdateContinueCount()">
+        </div>
+        <div class="param-group">
+          <label>BPM</label>
+          <input type="number" id="sn-bpm" value="80" min="1" max="999" oninput="snUpdateContinueCount()">
+        </div>
+        <div class="param-group">
+          <label>余裕F</label>
+          <input type="number" id="sn-buffer" value="1800" min="0" oninput="snUpdateContinueCount()">
+        </div>
+      </div>
+      <div class="param-calc-text" id="sn-fpc-calc"></div>
     </div>
   </div>
 
-  <!-- Metronome -->
-  <div class="metro-panel">
-    <div class="metro-title">メトロノーム</div>
-    <div class="beat-dots" id="beat-dots">
-      <div class="beat-dot" id="bd0"></div>
-      <div class="beat-dot" id="bd1"></div>
-      <div class="beat-dot" id="bd2"></div>
-      <div class="beat-dot" id="bd3"></div>
+  <!-- ── 調合時間計測 ── -->
+  <div class="panel" id="panel-craft">
+    <button class="panel-header" onclick="togglePanel('panel-craft')">
+      <span class="panel-title">⏱ 調合時間計測</span>
+      <span class="panel-chevron">▼</span>
+    </button>
+    <div class="panel-body">
+      <p class="panel-hint">
+        ① 調合開始と同時に「調合開始」を押す<br>
+        ② ホームに戻ると同時に「調合終了」を押す<br>
+        ③ 調合フレーム特定で現在Fを特定し SET<br>
+        ④ 再開と同時に ▶ スタート
+      </p>
+      <div class="craft-ctrl">
+        <button id="craft-measure-btn" class="action-btn" onclick="craftMeasureToggle()">⏱ 調合開始</button>
+        <span id="craft-measure-result" class="craft-result">—</span>
+      </div>
     </div>
-    <div id="metro-beat-count" style="font-family:monospace;font-size:1.4rem;font-weight:700;color:var(--yellow)">0 拍</div>
-    <div class="metro-row">
-      <label>速度</label>
-      <input type="range" id="metro-bpm-slider" min="1" max="120" value="30" step="1" oninput="metroSyncFromSlider()" style="flex:1">
-      <input type="number" id="metro-bpm" min="1" max="9999" value="30" step="1" oninput="metroSyncFromNumber()" style="width:72px;flex:none">
-      <span style="font-size:0.82rem;color:var(--text2);white-space:nowrap">BPM</span>
+  </div>
+
+  <!-- ── メトロノーム ── -->
+  <div class="panel" id="panel-metro">
+    <button class="panel-header" onclick="togglePanel('panel-metro')">
+      <span class="panel-title">🎵 メトロノーム</span>
+      <span class="panel-chevron">▼</span>
+    </button>
+    <div class="panel-body">
+      <div class="beat-dots" id="beat-dots" style="justify-content:center;display:flex;gap:8px;margin-bottom:4px">
+        <div class="beat-dot" id="bd0"></div>
+        <div class="beat-dot" id="bd1"></div>
+        <div class="beat-dot" id="bd2"></div>
+        <div class="beat-dot" id="bd3"></div>
+      </div>
+      <div id="metro-beat-count" class="beat-count">0 拍</div>
+      <div class="metro-row">
+        <label>速度</label>
+        <input type="range" id="metro-bpm-slider" min="1" max="120" value="30" step="1" oninput="metroSyncFromSlider()" style="flex:1">
+        <input type="number" id="metro-bpm" min="1" max="9999" value="30" step="1" oninput="metroSyncFromNumber()" style="width:72px;flex:none">
+        <span style="font-size:0.82rem;color:var(--text2);white-space:nowrap">BPM</span>
+      </div>
+      <button class="metro-start-btn" id="metro-btn" onclick="metroToggle()">▶ メトロノーム開始</button>
     </div>
-    <button class="metro-start-btn" id="metro-btn" onclick="metroToggle()">▶ メトロノーム開始</button>
+  </div>
+
+  <!-- ── 調合フレーム特定 ── -->
+  <div class="panel" id="panel-combo">
+    <button class="panel-header" onclick="togglePanel('panel-combo')">
+      <span class="panel-title">🔍 調合フレーム特定</span>
+      <span class="panel-chevron">▼</span>
+    </button>
+    <div class="panel-body" id="sn-combo-panel">
+      <p class="panel-hint">
+        自宅で調合ボタン長押し→複数個の弾を調合し、所持数の変化を空白区切りで入力。<br>
+        例) 0個→3個→6個→9個… なら <code>00 03 06 09…</code>
+      </p>
+
+      <div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px">
+        <div style="font-size:0.8rem;font-weight:700;margin-bottom:6px;color:var(--accent)">📹 動画から自動入力（Switch 1080p）</div>
+        <input type="file" id="video-file" accept="video/*"
+          style="font-size:0.78rem;width:100%;margin-bottom:6px"
+          onchange="videoLoadFirstFrame()">
+        <div id="video-region-area" style="display:none;margin-bottom:8px">
+          <div style="font-size:0.75rem;color:var(--text2);margin-bottom:4px">所持数が表示されている領域をドラッグで囲んでください</div>
+          <div style="margin-bottom:6px">
+            <button onclick="useDefaultRegion()"
+              style="background:var(--bg2);border:1px solid var(--accent);color:var(--accent);border-radius:6px;padding:4px 12px;font-size:0.78rem;cursor:pointer">
+              📐 デフォルト領域を使用
+            </button>
+          </div>
+          <div style="position:relative;display:inline-block">
+            <img id="video-preview-img" style="max-width:100%;display:block;border-radius:4px">
+            <canvas id="video-region-canvas"
+              style="position:absolute;top:0;left:0;cursor:crosshair"
+              onmousedown="regionStart(event)" onmousemove="regionMove(event)" onmouseup="regionEnd(event)"
+              ontouchstart="regionTouchStart(event)" ontouchmove="regionTouchMove(event)" ontouchend="regionTouchEnd(event)"></canvas>
+          </div>
+          <div style="font-size:0.75rem;color:var(--text2);margin-top:4px" id="video-region-hint">未選択</div>
+          <button onclick="videoAnalyze()"
+            style="margin-top:6px;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:0.82rem;cursor:pointer"
+            id="video-analyze-btn" disabled>解析して自動入力</button>
+          <div class="spinner" id="video-spinner">解析中...</div>
+        </div>
+        <div id="video-error" style="font-size:0.78rem;color:#f87;margin-top:4px"></div>
+      </div>
+
+      <input type="hidden" id="sn-combo-seed" value="">
+
+      <div class="section-title">調合数データ</div>
+      <textarea class="combo-textarea" id="sn-combo-str" placeholder="例: 00 03 06 09 11 13 16 18 21 23 25 27 30 32 35 38"></textarea>
+
+      <div class="section-title">検索範囲</div>
+      <div class="row">
+        <label>開始F</label>
+        <input type="number" id="sn-combo-start" value="0" min="0">
+      </div>
+      <div class="row">
+        <label>検索数</label>
+        <input type="number" id="sn-combo-step" value="1000000" min="1000" max="10000000">
+      </div>
+      <button class="search-btn" id="sn-combo-search-btn" onclick="doComboSearch()" style="margin-top:8px">🔍 検索</button>
+      <div class="spinner" id="sn-combo-spinner">検索中...</div>
+      <div id="sn-combo-error"></div>
+      <div id="sn-combo-results-area" style="margin-top:8px"></div>
+    </div>
   </div>
 
   <!-- ── ずれ確認 ── -->
-  <div class="metro-panel" style="margin-top:16px;width:100%;max-width:700px">
-    <div class="metro-title" style="cursor:pointer;user-select:none" onclick="toggleOffsetPanel()">
-      実際に出たお守りを入力してずれを確認 <span id="offset-toggle-icon">▶</span>
-    </div>
-    <div id="sn-offset-panel" style="display:none">
-      <div class="combo-hint" style="margin-bottom:10px">
-        スナイプ後に実際に入手したお守りを入力すると、目標フレームとのずれを表示します。
-      </div>
+  <div class="panel" id="panel-offset">
+    <button class="panel-header" onclick="togglePanel('panel-offset')">
+      <span class="panel-title">📊 ずれ確認</span>
+      <span class="panel-chevron">▼</span>
+    </button>
+    <div class="panel-body" id="sn-offset-panel">
+      <p class="panel-hint">スナイプ後に実際に入手したお守りを入力すると、目標フレームとのずれを表示します。</p>
       <div class="section-title">スキル1</div>
       <div id="result-skill1-combo" class="skill-combo" data-sp="result-sp1"></div>
       <div class="row">
@@ -749,8 +931,6 @@
       <button class="search-btn" id="offset-search-btn" onclick="doOffsetSearch()" style="margin-top:8px">🔍 ずれを確認</button>
       <div class="spinner" id="offset-spinner">検索中...</div>
       <div id="offset-result" style="margin-top:12px"></div>
-
-      <!-- Offset history panel -->
       <div id="offset-history-panel" style="margin-top:16px;display:none">
         <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;color:var(--text2);text-transform:uppercase;margin-bottom:8px">直近のずれ履歴</div>
         <div id="offset-history-list"></div>
@@ -758,81 +938,10 @@
     </div>
   </div>
 
-  <!-- ── COMBO SNIPE ── -->
-  <div class="metro-panel" style="margin-top:16px">
-    <div class="metro-title" style="cursor:pointer;user-select:none" onclick="toggleComboPanel()">
-      調合でフレームを特定 <span id="combo-toggle-icon">▼</span>
-    </div>
-    <div id="sn-combo-panel">
-      <div class="combo-hint" style="margin-bottom:10px">
-        自宅で調合ボタン長押し→複数個の弾を調合し、所持数の変化を空白区切りで入力。<br>
-        例) 0個→3個→6個→9個… なら <code>00 03 06 09…</code><br>
-        特定したフレームは自動的に「③ 現在F」へセットされます。
-      </div>
+  <!-- Spacer for sticky timer bar on mobile -->
+  <div class="timer-spacer"></div>
 
-      <!-- 動画自動解析 -->
-      <div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px">
-        <div style="font-size:0.8rem;font-weight:700;margin-bottom:6px;color:var(--accent)">📹 動画から自動入力（Switch 1080p）</div>
-        <input type="file" id="video-file" accept="video/*"
-          style="font-size:0.78rem;width:100%;margin-bottom:6px"
-          onchange="videoLoadFirstFrame()">
-
-        <!-- 領域選択キャンバス（最初のフレーム表示） -->
-        <div id="video-region-area" style="display:none;margin-bottom:8px">
-          <div style="font-size:0.75rem;color:var(--text2);margin-bottom:4px">
-            所持数が表示されている領域をドラッグで囲んでください
-          </div>
-          <div style="margin-bottom:6px">
-            <button onclick="useDefaultRegion()"
-              style="background:var(--bg2);border:1px solid var(--accent);color:var(--accent);border-radius:6px;padding:4px 12px;font-size:0.78rem;cursor:pointer">
-              📐 デフォルト領域を使用
-            </button>
-          </div>
-          <div style="position:relative;display:inline-block">
-            <img id="video-preview-img" style="max-width:100%;display:block;border-radius:4px">
-            <canvas id="video-region-canvas"
-              style="position:absolute;top:0;left:0;cursor:crosshair"
-              onmousedown="regionStart(event)"
-              onmousemove="regionMove(event)"
-              onmouseup="regionEnd(event)"
-              ontouchstart="regionTouchStart(event)"
-              ontouchmove="regionTouchMove(event)"
-              ontouchend="regionTouchEnd(event)"></canvas>
-          </div>
-          <div style="font-size:0.75rem;color:var(--text2);margin-top:4px" id="video-region-hint">未選択</div>
-          <button onclick="videoAnalyze()"
-            style="margin-top:6px;background:var(--accent);color:#fff;border:none;
-                   border-radius:6px;padding:5px 14px;font-size:0.82rem;cursor:pointer"
-            id="video-analyze-btn" disabled>解析して自動入力</button>
-          <div class="spinner" id="video-spinner">解析中...</div>
-        </div>
-        <div id="video-error" style="font-size:0.78rem;color:#f87;margin-top:4px"></div>
-      </div>
-
-      <input type="hidden" id="sn-combo-seed" value="">
-
-      <div class="section-title">調合数データ</div>
-      <textarea class="combo-textarea" id="sn-combo-str" placeholder="例: 00 03 06 09 11 13 16 18 21 23 25 27 30 32 35 38"></textarea>
-
-      <div class="section-title">検索範囲</div>
-      <div class="row">
-        <label>開始F</label>
-        <input type="number" id="sn-combo-start" value="0" min="0">
-      </div>
-      <div class="row">
-        <label>検索数</label>
-        <input type="number" id="sn-combo-step" value="1000000" min="1000" max="10000000">
-      </div>
-
-      <button class="search-btn" id="sn-combo-search-btn" onclick="doComboSearch()" style="margin-top:8px">🔍 検索</button>
-      <div class="spinner" id="sn-combo-spinner">検索中...</div>
-
-      <div id="sn-combo-error"></div>
-      <div id="sn-combo-results-area" style="margin-top:8px"></div>
-    </div>
-  </div>
-
-</div>
+</div><!-- /snipe-layout -->
 </div><!-- /screen-snipe -->
 
 <script>
@@ -842,6 +951,27 @@ function setActiveNav(id) {
     const el = document.getElementById(n);
     if (el) el.classList.toggle('active', n === id);
   });
+  // Bottom nav
+  const navMap = {'nav-search':'search','nav-favs':'favs','nav-snipe':'snipe','':'snipe'};
+  const activeTab = navMap[id] || (id === '' ? '' : id);
+  document.querySelectorAll('.bottom-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.nav === activeTab);
+  });
+}
+
+function showSnipeTab() {
+  if (snCurrentResult) {
+    document.getElementById('screen-search').classList.remove('active');
+    document.getElementById('screen-favs').classList.remove('active');
+    document.getElementById('screen-snipe').classList.add('active');
+    document.querySelectorAll('.bottom-tab').forEach(t => t.classList.toggle('active', t.dataset.nav === 'snipe'));
+  } else {
+    showSearch();
+  }
+}
+
+function togglePanel(id) {
+  document.getElementById(id).classList.toggle('open');
 }
 
 function showSearch() {
@@ -976,7 +1106,9 @@ function showSnipe(result) {
   document.getElementById('screen-search').classList.remove('active');
   document.getElementById('screen-favs').classList.remove('active');
   document.getElementById('screen-snipe').classList.add('active');
-  setActiveNav('');
+  document.querySelectorAll('.bottom-tab').forEach(t => t.classList.toggle('active', t.dataset.nav === 'snipe'));
+  const frameInlineOld = document.getElementById('sn-frame-inline');
+  if (frameInlineOld) frameInlineOld.textContent = result.frame.toLocaleString() + ' F';
 }
 
 // ─── Search ───────────────────────────────────────────────
@@ -1705,8 +1837,11 @@ window.showSnipe = function(idxOrObj) {
   document.getElementById('screen-search').classList.remove('active');
   document.getElementById('screen-favs').classList.remove('active');
   document.getElementById('screen-snipe').classList.add('active');
-  setActiveNav('');
-  document.getElementById('back-btn').style.display = '';
+  document.querySelectorAll('.bottom-tab').forEach(t => t.classList.toggle('active', t.dataset.nav === 'snipe'));
+  const frameInline = document.getElementById('sn-frame-inline');
+  if (frameInline) frameInline.textContent = r.frame.toLocaleString() + ' F';
+  const backBtn = document.getElementById('back-btn');
+  if (backBtn) backBtn.style.display = '';
 }
 
 // ─── Snipe Timer ──────────────────────────────────────────
@@ -2048,11 +2183,7 @@ loadOffsetHistory();
 
 // ─── Combo snipe (on snipe screen) ───────────────────────
 function toggleComboPanel() {
-  const panel = document.getElementById('sn-combo-panel');
-  const icon  = document.getElementById('combo-toggle-icon');
-  const hidden = panel.style.display === 'none';
-  panel.style.display = hidden ? '' : 'none';
-  icon.textContent = hidden ? '▼' : '▶';
+  togglePanel('panel-combo');
 }
 
 async function doComboSearch() {
@@ -2124,11 +2255,7 @@ function setResultSlot(n) {
   document.querySelectorAll('#result-slot-group .btn').forEach((b, i) => b.classList.toggle('active', i === n));
 }
 function toggleOffsetPanel() {
-  const panel = document.getElementById('sn-offset-panel');
-  const icon  = document.getElementById('offset-toggle-icon');
-  const hidden = panel.style.display === 'none';
-  panel.style.display = hidden ? '' : 'none';
-  icon.textContent = hidden ? '▼' : '▶';
+  togglePanel('panel-offset');
 }
 
 async function doOffsetSearch() {
@@ -2378,6 +2505,7 @@ async function videoAnalyze() {
     } else {
       errEl.style.color = '#6f6';
       errEl.textContent = `✔ ${data.counts.length}件検出 → 自動検索中...`;
+      document.getElementById('panel-combo').classList.add('open');
       doComboSearch();
     }
     setTimeout(() => { errEl.textContent = ''; errEl.style.color = ''; }, 4000);
