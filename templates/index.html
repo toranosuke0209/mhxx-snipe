@@ -2378,11 +2378,7 @@ function videoLoadFirstFrame() {
   const objUrl = URL.createObjectURL(file);
   videoEl.src = objUrl;
 
-  videoEl.addEventListener('loadeddata', () => {
-    videoEl.currentTime = 0;
-  }, {once: true});
-
-  videoEl.addEventListener('seeked', () => {
+  function drawFirstFrame() {
     try {
       const tmpCanvas = document.createElement('canvas');
       tmpCanvas.width  = videoEl.videoWidth;
@@ -2410,7 +2406,11 @@ function videoLoadFirstFrame() {
       spinner.classList.remove('show');
       URL.revokeObjectURL(objUrl);
     }
-  }, {once: true});
+  }
+
+  // loadeddata で最初のフレームが利用可能になる。
+  // currentTime=0 → seeked はiOSで発火しないため loadeddata で直接描画する。
+  videoEl.addEventListener('loadeddata', drawFirstFrame, {once: true});
 
   videoEl.addEventListener('error', () => {
     errEl.textContent = '⚠️ 動画の読み込みに失敗しました';
