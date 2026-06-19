@@ -1750,6 +1750,8 @@ async function saveFavFromSnipe() {
   setTimeout(() => { btn.textContent = orig; btn.style.color = '#f5c518'; }, 1500);
 }
 let snInterval = null;
+let snStartTime = null;
+let snFrameAtStart = 0;
 
 function frameToTime(fr) {
   const d = Math.floor(fr / 2592000);
@@ -1806,7 +1808,12 @@ function snUpdateNearTimer() {
 }
 
 function snTimerTick() {
-  snFrame++;
+  if (snStartTime !== null) {
+    const elapsed = Date.now() - snStartTime;
+    snFrame = snFrameAtStart + Math.floor(elapsed / MS_PER_FRAME);
+  } else {
+    snFrame++;
+  }
   const remain = snTarget - snFrame;
   document.getElementById('sn-current').textContent      = snFrame.toLocaleString();
   document.getElementById('sn-current-time').textContent = frameToTime(snFrame);
@@ -1901,6 +1908,8 @@ function snTimerToggle() {
     snTimerStop();
   } else {
     snRunning = true;
+    snStartTime = Date.now();
+    snFrameAtStart = snFrame;
     btn.textContent = '⏸ 停止';
     btn.className = 'ctrl-btn stop';
     snInterval = setInterval(snTimerTick, MS_PER_FRAME);
@@ -1910,10 +1919,21 @@ function snTimerToggle() {
 function snTimerStop() {
   clearInterval(snInterval);
   snRunning = false;
+  snStartTime = null;
   snCancelNotification();
   const btn = document.getElementById('sn-timer-btn');
   if (btn) { btn.textContent = '▶ スタート'; btn.className = 'ctrl-btn start'; }
 }
+// バックグラウンドから復帰した時にフレームを実時間で同期
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && snRunning && snStartTime !== null) {
+    const elapsed = Date.now() - snStartTime;
+    snFrame = snFrameAtStart + Math.floor(elapsed / MS_PER_FRAME);
+    // 通知を再スケジュール（バックグラウンド中にsetTimeoutが止まっていた可能性）
+    snScheduleNotification();
+  }
+});
+
 let craftMeasureStartTime = null;
 let craftElapsed = 0;
 
@@ -1944,6 +1964,8 @@ function craftMeasureToggle() {
 
 function snTimerReset() {
   snTimerStop();
+  snStartTime = null;
+  snFrameAtStart = 0;
   snFrame = 0;
   document.getElementById('sn-current-input').value = 0;
   document.getElementById('sn-current').textContent      = '0';
