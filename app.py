@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import core
 import video_analyze
 import charm_cache
+import webpush as wp
 import sqlite3
 import os
 
@@ -366,6 +367,54 @@ def presets_delete(preset_id):
     con.execute('DELETE FROM search_presets WHERE id = ? AND username = ?', (preset_id, username))
     con.commit()
     con.close()
+    return jsonify({'ok': True})
+
+
+@app.route('/api/push/vapid_public_key')
+def push_vapid_key():
+    return jsonify({'key': wp.VAPID_PUBLIC_KEY})
+
+
+@app.route('/api/push/subscribe', methods=['POST'])
+def push_subscribe():
+    data = request.json
+    username = data.get('username', 'anonymous')
+    subscription = data.get('subscription')
+    if not subscription:
+        return jsonify({'error': 'subscription required'}), 400
+    wp.cancel_notification(username)
+    # subscriptionをメモリに保持（プロセス再起動で消えるが簡易実装）
+    wp._subscriptions = getattr(wp, '_subscriptions', {})
+    wp._subscriptions[username] = subscription
+    return jsonify({'ok': True})
+
+
+@app.route('/api/push/schedule', methods=['POST'])
+def push_schedule():
+    data = request.json
+    username = data.get('username', 'anonymous')
+    delay_sec = float(data.get('delay_sec', 0))
+    target_frame = data.get('target_frame', 0)
+    wp._subscriptions = getattr(wp, '_subscriptions', {})
+    subscription = wp._subscriptions.get(username)
+    if not subscription:
+        return jsonify({'error': 'not subscribed'}), 400
+    if delay_sec <= 0:
+        return jsonify({'error': 'delay_sec must be positive'}), 400
+    wp.schedule_notification(
+        username=username,
+        subscription=subscription,
+        delay_sec=delay_sec,
+        title='🎯 まもなく目標フレーム！',
+        body=f'あと30秒で目標フレーム {int(target_frame):,} Fです',
+    )
+    return jsonify({'ok': True})
+
+
+@app.route('/api/push/cancel', methods=['POST'])
+def push_cancel():
+    username = (request.json or {}).get('username', 'anonymous')
+    wp.cancel_notification(username)
     return jsonify({'ok': True})
 
 

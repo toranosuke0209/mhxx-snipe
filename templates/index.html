@@ -1852,7 +1852,35 @@ function snTimerTick() {
 
 // ─── Push Notification ────────────────────────────────────
 const NOTIF_ADVANCE_FRAMES = 900; // 30秒前（30fps×30秒）
-let _notifTimer = null;
+let _pushSubscription = null;
+
+// ── Web Push 購読 ──────────────────────────────────────────
+async function _getVapidKey() {
+  const res = await fetch('/api/push/vapid_public_key');
+  const { key } = await res.json();
+  const bin = atob(key.replace(/-/g, '+').replace(/_/g, '/'));
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+
+async function _subscribePush() {
+  if (!('PushManager' in window)) return null;
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    const key = await _getVapidKey();
+    sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+  }
+  _pushSubscription = sub;
+  const username = document.getElementById('username-input')?.value || 'anonymous';
+  await fetch('/api/push/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, subscription: sub.toJSON() }),
+  });
+  return sub;
+}
 
 async function requestNotifPermission() {
   if (!('Notification' in window)) {
@@ -1860,6 +1888,9 @@ async function requestNotifPermission() {
     return;
   }
   const result = await Notification.requestPermission();
+  if (result === 'granted') {
+    try { await _subscribePush(); } catch(e) { console.warn('push subscribe failed', e); }
+  }
   updateNotifBtn(result);
 }
 
@@ -1881,25 +1912,31 @@ function updateNotifBtn(perm) {
   }
 }
 
-function snScheduleNotification() {
-  snCancelNotification();
+async function snScheduleNotification() {
   if (Notification.permission !== 'granted') return;
   const remain = snTarget - snFrame - NOTIF_ADVANCE_FRAMES;
   if (remain <= 0) return;
-  const delayMs = remain * MS_PER_FRAME;
-  _notifTimer = setTimeout(async () => {
-    const reg = await navigator.serviceWorker.ready;
-    reg.showNotification('🎯 まもなく目標フレーム！', {
-      body: `あと30秒（${NOTIF_ADVANCE_FRAMES}F）で目標フレーム ${snTarget.toLocaleString()} Fです`,
-      icon: '/static/icon-192.png',
-      tag: 'snipe-alert',
-      requireInteraction: true,
+  const delaySec = remain * MS_PER_FRAME / 1000;
+  const username = document.getElementById('username-input')?.value || 'anonymous';
+  try {
+    await _subscribePush();
+    await fetch('/api/push/schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, delay_sec: delaySec, target_frame: snTarget }),
     });
-  }, delayMs);
+  } catch(e) { console.warn('push schedule failed', e); }
 }
 
-function snCancelNotification() {
-  if (_notifTimer) { clearTimeout(_notifTimer); _notifTimer = null; }
+async function snCancelNotification() {
+  const username = document.getElementById('username-input')?.value || 'anonymous';
+  try {
+    await fetch('/api/push/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username }),
+    });
+  } catch(e) {}
 }
 
 function snTimerToggle() {

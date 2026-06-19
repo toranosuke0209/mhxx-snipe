@@ -20,6 +20,26 @@ self.addEventListener('fetch', e => {
   );
 });
 
+self.addEventListener('push', e => {
+  let title = '🎯 まもなく目標フレーム！';
+  let body = '';
+  try {
+    const data = e.data.json();
+    title = data.title || title;
+    body = data.body || body;
+  } catch (_) {
+    body = e.data ? e.data.text() : '';
+  }
+  e.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: '/static/icon-192.png',
+      tag: 'snipe-alert',
+      requireInteraction: true,
+    })
+  );
+});
+
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   e.waitUntil(
