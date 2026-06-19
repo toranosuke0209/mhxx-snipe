@@ -2358,9 +2358,23 @@ async function videoAnalyze() {
       return;
     }
     document.getElementById('sn-combo-str').value = data.combo_str;
-    errEl.style.color = '#6f6';
-    errEl.textContent = `✔ ${data.counts.length}件検出 → 自動検索中...`;
-    doComboSearch();
+
+    // 差分チェック
+    const counts = data.counts;
+    const badSteps = [];
+    for (let i = 1; i < counts.length; i++) {
+      const diff = counts[i] - counts[i - 1];
+      if (diff < 2 || diff > 4) badSteps.push(`${counts[i-1]}→${counts[i]}(+${diff})`);
+    }
+
+    if (badSteps.length > 0) {
+      errEl.style.color = '#f87';
+      errEl.textContent = `⚠️ 異常な増加を検出: ${badSteps.join(', ')} — 領域を確認してください`;
+    } else {
+      errEl.style.color = '#6f6';
+      errEl.textContent = `✔ ${data.counts.length}件検出 → 自動検索中...`;
+      doComboSearch();
+    }
     setTimeout(() => { errEl.textContent = ''; errEl.style.color = ''; }, 4000);
   } catch(e) {
     errEl.textContent = '⚠️ ' + e.message;
