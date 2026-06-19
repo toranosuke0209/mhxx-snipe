@@ -1942,12 +1942,12 @@ function updateNotifBtn(perm) {
 
 async function snScheduleNotification() {
   if (Notification.permission !== 'granted') return;
+  if (!_pushSubscription) return;
   const remain = snTarget - snFrame - NOTIF_ADVANCE_FRAMES;
   if (remain <= 0) return;
   const delaySec = remain * MS_PER_FRAME / 1000;
   const username = getUsername();
   try {
-    await _subscribePush();
     await fetch('/api/push/schedule', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2536,6 +2536,14 @@ async function videoAnalyze() {
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/static/sw.js');
+    // ページ読み込み時に既存のPush購読を復元
+    if ('PushManager' in window && Notification.permission === 'granted') {
+      navigator.serviceWorker.getRegistration('/static/sw.js').then(reg => {
+        if (reg) reg.pushManager.getSubscription().then(sub => {
+          if (sub) _pushSubscription = sub;
+        });
+      });
+    }
   }
 </script>
 </body>
