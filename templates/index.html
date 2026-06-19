@@ -1883,13 +1883,25 @@ async function _subscribePush() {
 }
 
 async function requestNotifPermission() {
+  const statusEl = document.getElementById('notif-status');
   if (!('Notification' in window)) {
-    document.getElementById('notif-status').textContent = 'このブラウザは通知非対応です';
+    statusEl.textContent = 'このブラウザは通知非対応です';
+    return;
+  }
+  if (!('PushManager' in window)) {
+    statusEl.textContent = 'Web Push非対応ブラウザです';
     return;
   }
   const result = await Notification.requestPermission();
   if (result === 'granted') {
-    try { await _subscribePush(); } catch(e) { console.warn('push subscribe failed', e); }
+    statusEl.textContent = '購読中...';
+    try {
+      await _subscribePush();
+      statusEl.textContent = '✅ 購読完了！タイマー開始で通知が届きます';
+    } catch(e) {
+      statusEl.textContent = '❌ エラー: ' + e.message;
+      console.error('push subscribe failed', e);
+    }
   }
   updateNotifBtn(result);
 }
