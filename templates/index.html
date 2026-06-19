@@ -823,8 +823,8 @@
       <div id="metro-beat-count" class="beat-count">0 拍</div>
       <div class="metro-row">
         <label>速度</label>
-        <input type="range" id="metro-bpm-slider" min="1" max="120" value="30" step="1" oninput="metroSyncFromSlider()" style="flex:1">
-        <input type="number" id="metro-bpm" min="1" max="9999" value="30" step="1" oninput="metroSyncFromNumber()" style="width:72px;flex:none">
+        <input type="range" id="metro-bpm-slider" min="1" max="120" value="80" step="1" oninput="metroSyncFromSlider()" style="flex:1">
+        <input type="number" id="metro-bpm" min="1" max="9999" value="80" step="1" oninput="metroSyncFromNumber()" style="width:72px;flex:none">
         <span style="font-size:0.82rem;color:var(--text2);white-space:nowrap">BPM</span>
       </div>
       <button class="metro-start-btn" id="metro-btn" onclick="metroToggle()">▶ メトロノーム開始</button>
@@ -2049,7 +2049,7 @@ let metroRunning = false;
 let metroCtx = null;
 let metroNextTime = 0;
 let metroSchedulerId = null;
-let metroBpm = 30;
+let metroBpm = 80;
 let metroBeat = 0;       // position within 4-beat bar (for dot display)
 let metroTotalBeats = 0; // total beats since start
 const SCHEDULE_AHEAD = 0.1;
@@ -2120,7 +2120,7 @@ function metroStop() {
   if (btn) { btn.textContent = '▶ メトロノーム開始'; btn.classList.remove('running'); }
 }
 function metroApplyBpm(bpm) {
-  metroBpm = Math.max(1, Math.min(9999, bpm || 30));
+  metroBpm = Math.max(1, Math.min(9999, bpm || 80));
   document.getElementById('metro-bpm').value = metroBpm;
   document.getElementById('metro-bpm-slider').value = Math.min(metroBpm, 120);
   if (metroRunning) {
