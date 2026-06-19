@@ -1865,17 +1865,26 @@ async function _getVapidKey() {
 }
 
 async function _subscribePush() {
+  const st = document.getElementById('notif-status');
+  const dbg = s => { if (st) st.textContent = s; console.log('[push]', s); };
   if (!('PushManager' in window)) throw new Error('PushManager未対応');
-  const reg = await navigator.serviceWorker.ready;
+  dbg('SW待機中...');
+  const reg = await Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise((_, rej) => setTimeout(() => rej(new Error('SW ready timeout')), 10000)),
+  ]);
+  dbg('既存サブスク確認中...');
   let sub = await reg.pushManager.getSubscription();
   if (!sub) {
+    dbg('VAPIDキー取得中...');
     const key = await _getVapidKey();
-    // タイムアウト付きsubscribe（iOSでハング対策）
+    dbg('購読リクエスト送信中...');
     sub = await Promise.race([
       reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('subscribe timeout (15s)')), 15000)),
     ]);
   }
+  dbg('サーバーに登録中...');
   _pushSubscription = sub;
   const username = getUsername();
   const res = await fetch('/api/push/subscribe', {
@@ -1884,6 +1893,7 @@ async function _subscribePush() {
     body: JSON.stringify({ username, subscription: sub.toJSON() }),
   });
   if (!res.ok) throw new Error('サーバー登録失敗: ' + res.status);
+  dbg('完了');
   return sub;
 }
 
