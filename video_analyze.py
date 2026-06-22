@@ -147,6 +147,10 @@ def extract_counts(file_storage, x, y, width, height):
             if frame_idx % sample_interval == 0:
                 val = _ocr_frame(frame, x, y, width, height)
                 if val is not None and val != prev_val:
+                    if prev_val is not None:
+                        diff = val - prev_val
+                        if diff <= 0 or diff < 2 or diff > 4:
+                            break  # 減少または異常増加でそれ以降を打ち切り
                     counts.append(val)
                     prev_val = val
             frame_idx += 1
